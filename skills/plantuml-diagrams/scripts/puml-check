@@ -301,14 +301,17 @@ def where(o):
         return f"{o[0]}:{o[1]} (src line {int(o[2]) + 1})"
     return f"{o[0]}:{o[1]}"
 
+def short_name(names, key):
+    """An element's alias: the last part of its qualified name (SVG ids map to names via data-qualified-name)."""
+    return (names.get(key) or key or "").split(".")[-1]
+
 def make_resolver(src_lines, names, edges):
     """SVG data-source-line counts lines after !include and macro expansion, so for C4, awslib and other
     includes it points into the library. Keep it when that source line mentions the element's alias;
     otherwise find the line in the user's file that declares the alias (or links both endpoints)."""
     n_src = len(src_lines)
     def alias(key):
-        q = names.get(key, key) or ""
-        return q.split(".")[-1]
+        return short_name(names, key)
     def mentions(line, a):
         return bool(a) and re.search(r"(?<![\w$])" + re.escape(a) + r"(?!\w)", line) is not None
     def find(pred):
@@ -650,8 +653,8 @@ def analyse(svg_path, target, fit_width, src_lines=()):
         dx, dy = q[0] - p[0], q[1] - p[1]; ll = dx * dx + dy * dy
         t = 0 if not ll else max(0, min(1, ((pt[0] - p[0]) * dx + (pt[1] - p[1]) * dy) / ll))
         return math.hypot(pt[0] - p[0] - t * dx, pt[1] - p[1] - t * dy)
-    def alias(k):
-        return (out["names"].get(k) or k).split(".")[-1]
+    alias = lambda k: short_name(out["names"], k)
+    samples = {k: resample(k) for k in keys}
     bundles = {}
     for i in range(len(keys)):
         for j in range(i + 1, len(keys)):
@@ -662,7 +665,7 @@ def analyse(svg_path, target, fit_width, src_lines=()):
             if not nb: continue
             nbox = nb["box"]
             far = lambda pt: box_dist(nbox, pt) > 20
-            run = sum(4.0 for pt in resample(keys[i]) if far(pt) and min((seg_dist(pt, p, q) for p, q in segs[keys[j]]), default=99) <= 3)
+            run = sum(4.0 for pt in samples[keys[i]] if far(pt) and min((seg_dist(pt, p, q) for p, q in segs[keys[j]]), default=99) <= 3)
             if run >= 40:
                 bundles.setdefault(node, []).append((keys[i], keys[j], run))
     trunks = []   # pairs that share a run, grouped per node into separate trunks (connected components)
