@@ -25,7 +25,6 @@ jobs:
     name: run.sh (Graphviz ${{ matrix.graphviz }})
     timeout-minutes: 20
     env:
-      TMPDIR: ${{ runner.temp }}
       GRAPHVIZ_DEB_SHA256: 02c70b9d42149f5e2ba0e3882643b22904720de50a0a3da84a30b8f32e8a1497
       PLANTUML_VERSION: 1.2026.8
       PLANTUML_SHA256: 5e1ecfa8ecd32c90b03bbf3b1eb6f020943f98ab0fcf4032be31a0002ee2c462
@@ -77,6 +76,8 @@ jobs:
           python3 --version
       - name: tests/run.sh
         # on the distro Graphviz the dfd template's aspect FAIL is known; any other FAIL, or a crash, fails the job
+        env:
+          TMPDIR: ${{ runner.temp }}
         run: |
           if [ "${{ matrix.graphviz }}" != distro ]; then tests/run.sh; exit; fi
           tests/run.sh | tee "$RUNNER_TEMP/run.log" || true
