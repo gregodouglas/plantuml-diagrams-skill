@@ -32,4 +32,4 @@ edges: from -> to : label           (≤ 4 words)
 direction: TB | LR                  (TB for hierarchies/trees; LR for chains, pipelines, layered flows on slides)
 target: 16:9 | letter | none
 ```
-Then scaffold (`puml-new`), fill in, check, look, fix (max 3 rounds), export.
+Then scaffold (`puml-new`), fill in, check, look, fix (until two runs in a row stop lowering the issue count), export.

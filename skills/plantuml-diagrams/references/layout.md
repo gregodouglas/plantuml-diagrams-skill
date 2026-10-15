@@ -103,4 +103,18 @@ orthogonal look on label-light diagrams.
 1. `plantuml -testdot` (Graphviz present?).
 2. `scripts/puml-check file.puml --target ...` and read the issue lines (source line numbers are 1-based).
 3. Add `!pragma svek_trace on`, render, read `svek.dot`: check `minlen`, reversed edges, `constraint=false`, clusters, node order.
-4. Change **one** thing per iteration (a direction, a hidden link, a split). Re-check. Stop after 3 rounds and split instead.
+4. Change **one** thing per iteration (a direction, a hidden link, a split). Re-check. Count the `warn`/`ERROR` lines
+   after each run: keep going while the count drops. In the field tests, dense diagrams inside the size limits took 5-9
+   runs to come clean. Stop when two runs in a row do not lower the count, or at 10 runs: the remaining issues usually
+   just move around (for example, an edge that crosses a boundary title crosses another title after each change).
+5. Then simplify before you split, and tell the user what you dropped:
+
+| Type | Simplify | Split |
+|---|---|---|
+| Sequence | reorder participants so most messages go between neighbours; payload detail in a `note right` | one diagram per flow or phase (`references/sequence.md`) |
+| Activity | `switch` instead of `elseif` chains; ≤ 3 lanes on a slide | by phase (`references/activity.md`) |
+| Component, deployment, cloud | link to the package, not its members; move a one-to-many fan-out ("writes PDFs, sends email") into the source node; leave out an edge that loops around the whole diagram and say so in the legend | overview + one diagram per layer or zone, `<<muted>>` "(see X)" stubs (`references/domains.md`) |
+| Data flow | draw writes only, "reads omitted" in the legend | one diagram per trust zone |
+| C4 | people and externals beside the boundary; shorter boundary title | split the container view by path and repeat the shared containers (`references/c4.md`) |
+| ER, class | names only; `package` per subject area, link the packages | one diagram per subject area with stub tables (`references/data-model.md`) |
+| State | composite state for a sub-lifecycle | one diagram per machine + an overview of machines (`references/state.md`) |

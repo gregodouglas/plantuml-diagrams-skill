@@ -29,7 +29,7 @@ fixes what the report says, looks at the PNG itself, and only then exports.
 
 ## How it works
 
-![Sequence diagram: the agent scaffolds a template with puml-new, then loops up to three rounds of puml-check (render the SVG with PlantUML, measure text and edges, return issues by source line) and fixes, looks at the PNG, and exports with puml-render](docs/diagrams/out/how-it-works.png)
+![Sequence diagram: the agent scaffolds a template with puml-new, then loops on puml-check (render the SVG with PlantUML, measure text and edges, return issues by source line) and fixes while the issue count drops, looks at the PNG, and exports with puml-render](docs/diagrams/out/how-it-works.png)
 
 *Drawn with the skill itself: [`docs/diagrams/how-it-works.puml`](docs/diagrams/how-it-works.puml) was scaffolded with
 `puml-new sequence` and came back clean from `puml-check` on the second round.*
@@ -106,7 +106,7 @@ lifecycle, API interaction, data model or system context, and on any mention of 
 > Tidy up `docs/diagrams/billing.puml`: the labels overlap.
 
 The agent states the one takeaway the diagram must prove, inventories the nodes and edges (and splits if there are too
-many), scaffolds from a template, runs the checker, fixes the issues it reports (up to three rounds), looks at the PNG,
+many), scaffolds from a template, runs the checker, fixes the issues it reports until two runs in a row stop lowering the count, looks at the PNG,
 exports, and reports what it dropped or simplified.
 
 The same tools work by hand:
