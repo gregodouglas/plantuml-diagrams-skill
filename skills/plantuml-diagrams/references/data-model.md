@@ -31,7 +31,9 @@ Verified on PlantUML 1.2026.8 (field test: a 16-table schema and a 13-class doma
 
 ## Class (`puml-new class`)
 - **Multiplicities sit at their own end:** `A "1" --> "0..*" B` puts `0..*` next to B. They sit on the node border and
-  collide with short edge labels on same-rank edges; `skinparam nodesep 80-110` moves them apart.
+  collide with short edge labels on same-rank edges; `skinparam nodesep 80-110` moves them apart. Two edges that meet
+  a class at one point stack their multiplicities (puml-check: `crowded-ends`); nodesep does not help there, `--->` on
+  one of the edges does (1.2026.8).
 - **Rows** work as for ER: `->` same rank, `-->` next row; flip the arrowhead (`Order "1" <-- "0..*" Payment`), not
   the operands, to place a class below without reversing the meaning. A 13-class model left to right came out 2.47
   wide with 5.7 px text; rows (services, their products, data) fixed it.

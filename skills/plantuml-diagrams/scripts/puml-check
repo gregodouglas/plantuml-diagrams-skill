@@ -34,6 +34,7 @@ SLOT = {"16:9": (1200, 600), "4:3": (900, 560), "letter": (624, 864), "a4": (602
 FIT_DEFAULT = {k: v[0] for k, v in SLOT.items()}
 FIT_HEIGHT = {k: v[1] for k, v in SLOT.items()}
 ASC, DESC = 0.80, 0.22      # ascent/descent as fraction of font-size (Java sans)
+MULT = re.compile(r"[\d.*n]+")  # multiplicity texts: 1, 0..*, *, 1..n
 TOL = 1.0                   # px shrink on boxes before intersecting
 ASPECT_TOL = 0.29           # |ln(ratio/target)| above this -> issue (about 1.33x off)
 MIN_FONT_PX = 9.0
@@ -426,6 +427,21 @@ def analyse(svg_path, target, fit_width, src_lines=()):
             a, b = T[i], T[j]
             if inter(shrink(a["box"]), shrink(b["box"])):
                 add("text-overlap", f"'{a['text']}' overlaps '{b['text']}'",
+                    src_line(a["owner"]) or src_line(b["owner"]), at=[where(a["owner"]), where(b["owner"])])
+    # 2a. edge-end texts of different edges that nearly touch: two multiplicities stacked where edges meet a class read
+    # as one jumble but never intersect, so text-overlap misses them
+    LT = [t for t in T if t["owner"] and t["owner"][0] == "link"]
+    for i in range(len(LT)):
+        for j in range(i + 1, len(LT)):
+            a, b = LT[i], LT[j]
+            if a["owner"][1] == b["owner"][1] or not (MULT.fullmatch(a["text"]) or MULT.fullmatch(b["text"])):
+                continue
+            A, B = a["box"], b["box"]
+            if inter(shrink(A), shrink(B)):   # reported as text-overlap
+                continue
+            gap = math.hypot(max(B[0] - A[2], A[0] - B[2], 0), max(B[1] - A[3], A[1] - B[3], 0))
+            if gap < 0.5 * min(a["fs"], b["fs"]):
+                add("crowded-ends", f"'{a['text']}' and '{b['text']}' on different edges are {gap:.1f}px apart and read as one; the edges meet the node at one point: give one of them its own rank (---> on it)",
                     src_line(a["owner"]) or src_line(b["owner"]), at=[where(a["owner"]), where(b["owner"])])
     # 3. link/entity label inside a foreign node
     for t in T:
