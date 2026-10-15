@@ -1,0 +1,8 @@
+@startuml
+' a message label that happens to be centred on a lifeline it crosses must still be reported
+participant "A" as a
+participant "B" as b
+participant "C" as c
+a -> b : wwwwwwwwwwwwwwwwwwww
+a -> c : wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+@enduml

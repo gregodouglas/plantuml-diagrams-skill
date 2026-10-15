@@ -32,6 +32,7 @@ got=$("$SK/scripts/puml-check" "$ROOT/tests/fixtures/lifeline-spans.puml" --form
 want="None 5 3 of 8 messages cross the lifelines between their participants"
 if [ "$got" = "$want" ]; then echo "ok   sequence lifeline crossings"; else echo "FAIL sequence lifeline crossings: got '$got', want '$want'"; fail=1; fi
 expect "$ROOT/tests/fixtures/group-label-centred.puml" "" "group-label-crosses-lifeline" ""
+expect "$ROOT/tests/fixtures/message-centred.puml" ""  "message-crosses-lifeline" ""
 expect "$ROOT/tests/fixtures/bracket-label.puml"    ""   "bracket-group-label" ""
 # sequence text issues carry the source line (the SVG gives none for them)
 ln=$("$SK/scripts/puml-check" "$ROOT/tests/fixtures/group-label.puml" --format gcc --out "$OUT" | sed -n 's/.*group-label\.puml:\([0-9]*\): warn: group-label-crosses-lifeline.*/\1/p')
