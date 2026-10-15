@@ -57,7 +57,9 @@ Defaults (SVG): participant 14, message 13, class name 14, members/edge labels 1
 - Minimum readable: ≥ 9 px once the diagram is scaled to its slot (puml-check `tiny-text` uses the `--target` fit width).
 - `skinparam defaultFontSize N` flattens the hierarchy (sets everything to N); prefer per-element sizes in `<style>`.
 - Fonts are **not embedded** in SVG/PDF. `<style> root { FontName "Helvetica, Arial, sans-serif" }` emits a real CSS stack in SVG;
-  `skinparam defaultFontName "A, B"` does not. Helvetica/Arial exist on macOS/Windows; Linux CI substitutes (widths shift 2-5%).
+  `skinparam defaultFontName "A, B"` does not. Helvetica/Arial exist on macOS/Windows. On Linux Java
+  renders in DejaVu Sans (about 12% wider) unless fontconfig prefers Liberation Sans; with it, widths match macOS and
+  boxes are 3-7% taller (`references/toolchain.md`).
 - `skinparam dpi N` scales **both** PNG and SVG coordinates: never put it in the file; `scripts/puml-render` passes `-Sdpi=` at export.
 
 ## 5. Chrome sets the canvas

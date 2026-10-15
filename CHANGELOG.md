@@ -12,7 +12,6 @@ All notable changes to this project are documented here. The format follows
   lifelines between their two participants, naming the worst pairs. The summary line prints
   `crossings=n/a lifeline-crossings=N` for sequence diagrams instead of `crossings=0`, and the JSON `edge_crossings`
   is `null` for them.
-
 ### Changed
 
 - The check-and-fix loop no longer stops at a fixed 3 rounds. Counting `warn` lines from the first run that renders,
@@ -23,6 +22,11 @@ All notable changes to this project are documented here. The format follows
 
 - `puml-check` now reports a message or `alt`/`else`/`loop` label that is crossed by a lifeline running through its
   middle. Before, any text centred on a lifeline was skipped as if it were a participant name.
+- The class template no longer labels its `..>` dependency edge. The `uses` label sat on its own edge with Linux fonts,
+  so the template failed its own check there.
+- Linux fonts: Java renders in DejaVu Sans (about 12 % wider) unless fontconfig prefers Liberation Sans, even with
+  both installed. `docs/INSTALL-RHEL.md` and `references/toolchain.md` now set that preference with a drop-in file, and
+  `references/labels-and-text.md` no longer claims a 2-5 % width shift.
 
 ## [0.1.0] - 2026-10-14
 
