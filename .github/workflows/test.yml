@@ -11,7 +11,16 @@ permissions:
 jobs:
   run-sh:
     runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        # 15.1.1: the Graphviz the references were verified with (official .deb, checksum verified).
+        # distro: Ubuntu's own 2.43, close to what RHEL 8/9 ship; layouts differ, so it reports but does not gate.
+        graphviz: ["15.1.1", "distro"]
+    continue-on-error: ${{ matrix.graphviz == 'distro' }}
+    name: run.sh (Graphviz ${{ matrix.graphviz }})
     env:
+      GRAPHVIZ_DEB_SHA256: 02c70b9d42149f5e2ba0e3882643b22904720de50a0a3da84a30b8f32e8a1497
       PLANTUML_VERSION: 1.2026.8
       PLANTUML_SHA256: 5e1ecfa8ecd32c90b03bbf3b1eb6f020943f98ab0fcf4032be31a0002ee2c462
     steps:
@@ -20,11 +29,19 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
-      - name: Install Graphviz and fonts
+      - name: Install fonts and Graphviz
         # Liberation Sans is metric-compatible with the Helvetica the house style names (docs/INSTALL-RHEL.md)
         run: |
           sudo apt-get update -q
-          sudo apt-get install -y -q --no-install-recommends graphviz fontconfig fonts-liberation fonts-dejavu-core
+          sudo apt-get install -y -q --no-install-recommends fontconfig fonts-liberation fonts-dejavu-core
+          if [ "${{ matrix.graphviz }}" = distro ]; then
+            sudo apt-get install -y -q --no-install-recommends graphviz
+          else
+            deb="$RUNNER_TEMP/graphviz.deb"
+            curl -fsSLo "$deb" "https://gitlab.com/api/v4/projects/4207231/packages/generic/graphviz-releases/${{ matrix.graphviz }}/ubuntu_24.04_graphviz-${{ matrix.graphviz }}-cmake.deb"
+            echo "$GRAPHVIZ_DEB_SHA256  $deb" | sha256sum -c -
+            sudo apt-get install -y -q "$deb"
+          fi
       - name: Install PlantUML (pinned, checksum verified)
         run: |
           mkdir -p "$RUNNER_TEMP/plantuml"
@@ -39,3 +56,10 @@ jobs:
           python3 --version
       - name: tests/run.sh
         run: tests/run.sh
+      - name: Keep the renders of a failed run
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: renders-graphviz-${{ matrix.graphviz }}
+          path: /tmp/puml-tests/*.svg
+          retention-days: 7
