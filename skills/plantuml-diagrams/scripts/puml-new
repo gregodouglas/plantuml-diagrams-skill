@@ -237,7 +237,7 @@ class CardGateway
 Customer "1" --> "0..*" Order : places
 Order    "1" *--  "1..*" OrderLine
 Order    -->  OrderStatus
-Order    ..>  PaymentGateway : uses
+Order    ..>  PaymentGateway
 PaymentGateway <|.. CardGateway
 """),
 
