@@ -32,4 +32,22 @@ edges: from -> to : label           (≤ 4 words)
 direction: TB | LR                  (TB for hierarchies/trees; LR for chains, pipelines, layered flows on slides)
 target: 16:9 | letter | none
 ```
-Then scaffold (`puml-new`), fill in, check, look, fix (max 3 rounds), export.
+Then scaffold (`puml-new`), fill in, check, look, fix (see below for when to stop), export.
+
+## When the fix loop stalls
+Count the `warn` lines from the first run that renders; fix a syntax `ERROR` first, it does not count. Keep going while
+a run sets a new lowest count. Stop when two runs in a row do not beat the lowest count so far, or at 12 runs. In the
+field tests, dense diagrams inside the size limits took 4-10 runs. When they stall, the remaining issues usually just
+move around (an edge that crosses a boundary title crosses another title after each change). Then simplify before you
+split, and tell the user what you dropped:
+
+| Type | Simplify | Split |
+|---|---|---|
+| Sequence | reorder participants so most messages go between neighbours; payload detail in a `note right` | one diagram per flow or phase (`references/sequence.md`) |
+| Activity | `switch` instead of `elseif` chains; ≤ 3 lanes on a slide | by phase (`references/activity.md`) |
+| Component, deployment, cloud | link to the package, not its members; move a one-to-many fan-out ("writes PDFs, sends email") into the source node; leave out an edge that loops around the whole diagram and say so in the legend | overview + one diagram per layer or zone, `<<muted>>` "(see X)" stubs (`references/domains.md`) |
+| Data flow | draw writes only, "reads omitted" in the legend | level 0, then one level-1 diagram per process (`references/domains.md`) |
+| Network | a redundant pair as one node ("A / B") with one edge; ports in the node label, not on edges | by site and by layer; physical and logical apart past ~12 nodes (`references/domains.md`) |
+| C4 | people and externals beside the boundary; shorter boundary title | split the container view by path and repeat the shared containers (`references/c4.md`) |
+| ER, class | names only; `package` per subject area, link the packages | one diagram per subject area with stub tables (`references/data-model.md`) |
+| State | composite state for a sub-lifecycle | one diagram per machine + an overview of machines (`references/state.md`) |

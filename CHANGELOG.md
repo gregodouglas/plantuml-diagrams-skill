@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- The check-and-fix loop no longer stops at a fixed 3 rounds. Counting `warn` lines from the first run that renders,
+  it keeps going while a run sets a new low, and stops after two runs that do not, or at 12 runs.
+  `references/choosing-and-design.md` now lists simplify and split moves for each diagram type.
+
 ### Fixed
 
 - The class template no longer labels its `..>` dependency edge. The `uses` label sat on its own edge with Linux fonts,

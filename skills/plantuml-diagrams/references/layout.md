@@ -103,4 +103,5 @@ orthogonal look on label-light diagrams.
 1. `plantuml -testdot` (Graphviz present?).
 2. `scripts/puml-check file.puml --target ...` and read the issue lines (source line numbers are 1-based).
 3. Add `!pragma svek_trace on`, render, read `svek.dot`: check `minlen`, reversed edges, `constraint=false`, clusters, node order.
-4. Change **one** thing per iteration (a direction, a hidden link, a split). Re-check. Stop after 3 rounds and split instead.
+4. Change **one** thing per iteration (a direction, a hidden link, a split). Re-check. When to stop, and what to
+   simplify or split then: `references/choosing-and-design.md`, "When the fix loop stalls".
