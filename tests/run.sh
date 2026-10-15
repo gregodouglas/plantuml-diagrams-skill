@@ -33,6 +33,9 @@ want="None 5 3 of 8 messages cross the lifelines between their participants"
 if [ "$got" = "$want" ]; then echo "ok   sequence lifeline crossings"; else echo "FAIL sequence lifeline crossings: got '$got', want '$want'"; fail=1; fi
 expect "$ROOT/tests/fixtures/group-label-centred.puml" "" "group-label-crosses-lifeline" ""
 expect "$ROOT/tests/fixtures/bracket-label.puml"    ""   "bracket-group-label" ""
+# edges that share a node and leave it on one trunk: the field-test samples that showed it (a cut-down graph does not reproduce it)
+expect "$ROOT/samples/cloud-aws/medium.puml"       16:9 "bundled-edges" ""
+expect "$ROOT/samples/data-model/class-small.puml" ""   "bundled-edges" ""
 # sequence text issues carry the source line (the SVG gives none for them)
 ln=$("$SK/scripts/puml-check" "$ROOT/tests/fixtures/group-label.puml" --format gcc --out "$OUT" | sed -n 's/.*group-label\.puml:\([0-9]*\): warn: group-label-crosses-lifeline.*/\1/p')
 if [ "$ln" = "9" ]; then echo "ok   sequence issue line"; else echo "FAIL sequence issue line: got '$ln', want 9"; fail=1; fi
