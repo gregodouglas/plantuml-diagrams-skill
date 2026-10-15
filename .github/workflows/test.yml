@@ -19,8 +19,7 @@ jobs:
       fail-fast: false
       matrix:
         # 15.1.1: the Graphviz the references were verified with (official .deb, checksum verified).
-        # distro: Ubuntu's own 2.43, close to what RHEL 8/9 ship; layouts differ, so it warns but does not gate
-        # (known: the dfd template comes out taller than 16:9).
+        # distro: Ubuntu's own 2.43, close to what RHEL 8/9 ship. Layouts differ; every template must pass on both.
         graphviz: ["15.1.1", "distro"]
     name: run.sh (Graphviz ${{ matrix.graphviz }})
     timeout-minutes: 20
@@ -75,22 +74,11 @@ jobs:
           dot -V
           python3 --version
       - name: tests/run.sh
-        # on the distro Graphviz the dfd template's aspect FAIL is known; any other FAIL, or a crash, fails the job
         env:
           TMPDIR: ${{ runner.temp }}
-        run: |
-          if [ "${{ matrix.graphviz }}" != distro ]; then tests/run.sh; exit; fi
-          tests/run.sh | tee "$RUNNER_TEMP/run.log" || true
-          known='^FAIL .*/templates/dfd\.puml: did not expect /\./ in \[aspect\]$'
-          if grep -q '^FAIL' "$RUNNER_TEMP/run.log"; then
-            grep -q -E "$known" "$RUNNER_TEMP/run.log" && echo "::warning title=Graphviz 2.43::dfd template is taller than 16:9 (known)"
-          fi
-          unexpected=$(grep '^FAIL' "$RUNNER_TEMP/run.log" | grep -v -E "$known" || true)
-          if [ -n "$unexpected" ] || ! grep -q '^ok   puml-render error exit' "$RUNNER_TEMP/run.log"; then
-            echo "unexpected failures on Graphviz 2.43:"; printf '%s\n' "$unexpected"; exit 1
-          fi
-      - name: Keep the renders
-        if: failure() || matrix.graphviz == 'distro'
+        run: tests/run.sh
+      - name: Keep the renders of a failed run
+        if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: renders-graphviz-${{ matrix.graphviz }}

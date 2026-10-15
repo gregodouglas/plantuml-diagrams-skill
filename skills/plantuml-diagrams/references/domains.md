@@ -37,7 +37,12 @@ General rules that came out of every domain:
 ## Data-flow diagrams (`puml-new dfd`)
 - Notation: process = `usecase` (ellipse, numbered 0 / 1 / 1.1), external entity = `rectangle`, store = `database` (`storage` looks like a process), boundary = `rectangle <<boundary>>` (dashed, transparent), PII flow = `-[#D55E00,bold]->` with "(PII)" in the label and a legend line `<color:#D55E00><b>orange</b></color> = PII`.
 - Levels: level 0 (one process, entities, stores) then one level-1 per process (7-9 nodes). Never both in one diagram.
-- Draw **writes** to stores and say "reads omitted" in the legend; read-backs loop around the whole diagram.
+- Draw **writes** to stores and say "reads omitted" in the legend; read-backs loop around the whole diagram. Draw a read
+  when it is a process's only input (`p2 <-- db : open cases`, arrowhead flipped so the store stays below).
+- Hand-offs between processes in one zone go through the store, not a same-rank `p1 -> p2`: Graphviz can place another
+  process between them, and the flow loops over the zone title. In the dfd template on Graphviz 2.43 that loop grew the
+  diagram to 573x610, past a 16:9 slot; the store read instead gave 698x541 (527x541 on 15.1.1; both Ubuntu CI with
+  Liberation Sans, PlantUML 1.2026.8; 527x519 on macOS).
 - Rows by zone (Public / App / Data / Third party) top-to-bottom with flipped arrowheads for upward flows.
 - Boundary titles are centred at the top; a flow entering from above crosses the title. What cleared all three crossings in the template, in combination: one-word zone titles (`App`, `Data`), cross-boundary flows linked to the zone rectangle, and the store that receives most flows declared last so it sits away from the title centre. `package`/`frame` titles and `HorizontalAlignment` made no difference. Dashed boundary + dashed "async" arrows clash; use a colour for one of them.
 

@@ -7,8 +7,8 @@ plantuml -version              # prints PlantUML AND Graphviz versions
 plantuml -testdot              # "Installation seems OK" — if dot is missing PlantUML silently falls back to smetana
 ```
 Linux/CI: download `plantuml-<ver>.jar` from GitHub releases (Debian's apt package is years old) or `docker run --rm -i plantuml/plantuml -tsvg -pipe`.
-Pin PlantUML ≥ 1.2026.7 (dot crashes now fail the run) and pin Graphviz; layouts differ across versions (Graphviz 2.43
-draws the dfd template taller than 15.x) and across fonts. Linux: Java does not find Helvetica and renders in
+Pin PlantUML ≥ 1.2026.7 (dot crashes now fail the run) and pin Graphviz; layouts differ across versions (the 0.2.0 dfd
+template: 722x541 on Graphviz 15.1.1, 573x610 on 2.43; CI runs both) and across fonts. Linux: Java does not find Helvetica and renders in
 fontconfig's first sans-serif family, DejaVu Sans (about 12% wider), even with Liberation Sans installed. Install
 Liberation Sans and prefer it, then widths match macOS (boxes 3-7% taller):
 ```

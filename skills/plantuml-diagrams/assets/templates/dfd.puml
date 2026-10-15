@@ -36,6 +36,8 @@ title dfd example
 ' when read-backs would loop around the diagram. Rows by zone, top-to-bottom (Public / App / Data+Third party);
 ' write upward flows with a flipped arrowhead (server <-- p2) so the rows hold. Keep one level per diagram:
 ' level 0 (context) then one level-1 per process. Boundaries stay top-to-bottom even for slides (direction="tb").
+' Hand-offs between processes in one zone: draw them through the store (p2 <-- db), not as a same-rank p1 -> p2;
+' Graphviz can put another process between the two, and the flow then loops over the zone title.
 
 rectangle "Public" as z_pub <<boundary>> {
   rectangle "Client" as client
@@ -54,11 +56,11 @@ rectangle "External" as z_ext <<boundary>> {
   rectangle "Partner portal" as court
 }
 
-' Flows that cross a boundary target the ZONE (z_app, z_ext); flows inside a zone target the node.
+' Flows from outside into App or External target the ZONE (z_app, z_ext); flows to and from a store target the store.
 ' Short zone titles + zone-level links are what keeps edges off the titles (measured: 3 crossings -> 0).
 client -[#D55E00,bold]-> z_app : new case (PII)
 server -[#D55E00,bold]-> z_app : visit + GPS (PII)
-p1 -> p2 : case id
+p2 <-- db : open cases
 server <-- p2 : job offer
 p1 -[#D55E00,bold]-> db : case (PII)
 p3 --> db : visit
@@ -67,6 +69,6 @@ p2 --> z_ext : filing
 
 legend right
   <color:#D55E00><b>orange bold</b></color> = carries PII
-  dashed box = trust boundary; reads from stores omitted
+  dashed box = trust boundary; other store reads omitted
 endlegend
 @enduml

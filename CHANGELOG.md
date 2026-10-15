@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- The dfd template fits 16:9 on Graphviz 2.4x (RHEL 8/9) as well as 15.x (#15). Its same-rank `Intake -> Assign`
+  flow looped over the App title on 2.43; Assign now reads `open cases` from the Case DB. `references/domains.md` says
+  when to draw a store read and why hand-offs inside a zone go through the store. CI now gates on Graphviz 2.43 too.
+
 ## [0.2.0] - 2026-10-15
 
 ### Added
