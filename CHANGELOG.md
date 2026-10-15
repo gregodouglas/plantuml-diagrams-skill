@@ -12,6 +12,11 @@ All notable changes to this project are documented here. The format follows
   number of `warn`/`ERROR` lines, and stops after two runs with no drop, or at 10 runs. `references/layout.md` now
   lists simplify and split moves for each diagram type.
 
+### Fixed
+
+- `puml-check` now reports an `alt`/`else`/`loop` label that is crossed by a lifeline running through its middle.
+  Before, the label was skipped as if it were a participant name centred on its own lifeline.
+
 ## [0.1.0] - 2026-10-14
 
 First public release.

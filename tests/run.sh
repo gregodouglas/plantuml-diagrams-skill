@@ -27,6 +27,7 @@ expect "$ROOT/tests/fixtures/syntax-error.puml"     ""   "ERROR" ""
 expect "$ROOT/tests/fixtures/mermaid.puml"          ""   "mermaid-syntax" ""
 expect "$ROOT/tests/fixtures/too-wide.puml"         16:9 "aspect" ""
 expect "$ROOT/tests/fixtures/group-label.puml"      ""   "group-label-crosses-lifeline" ""
+expect "$ROOT/tests/fixtures/group-label-centred.puml" "" "group-label-crosses-lifeline" ""
 expect "$ROOT/tests/fixtures/bracket-label.puml"    ""   "bracket-group-label" ""
 # sequence text issues carry the source line (the SVG gives none for them)
 ln=$("$SK/scripts/puml-check" "$ROOT/tests/fixtures/group-label.puml" --format gcc --out "$OUT" | sed -n 's/.*group-label\.puml:\([0-9]*\): warn: group-label-crosses-lifeline.*/\1/p')

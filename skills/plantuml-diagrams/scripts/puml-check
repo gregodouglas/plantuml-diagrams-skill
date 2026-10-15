@@ -553,9 +553,11 @@ def analyse(svg_path, target, fit_width, src_lines=()):
             if b[3] < ly0 or b[1] > ly1:                 # title/caption above or below the lifelines
                 continue
             cx = (b[0] + b[2]) / 2
-            if any(abs(x - cx) < 8 for x in xs):          # actor/database labels centred on their own lifeline
-                continue
             hits = [x for x in xs if b[0] + 2 < x < b[2] - 2]
+            if not t["text"].startswith("["):
+                # actor/database labels sit centred on their own lifeline: that one does not count. Group labels
+                # start at the frame's left edge, so one that is centred on a lifeline is crossed by it.
+                hits = [x for x in hits if abs(x - cx) >= 8]
             if hits and t["text"].startswith("["):
                 # PlantUML starts else/loop labels ~11 px left of the group's first lifeline, so that one always touches
                 # the opening characters; only a lifeline further into the text means the label is too long

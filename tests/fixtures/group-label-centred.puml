@@ -1,0 +1,11 @@
+@startuml
+' a loop label that happens to be centred on a lifeline it crosses must still be reported
+participant "Agent" as agent
+participant "Template" as tpl
+participant "Checker" as check
+agent -> tpl : scaffold
+loop while the issue count drops
+  agent -> check : check
+  check --> agent : issues
+end
+@enduml
