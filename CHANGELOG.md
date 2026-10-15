@@ -6,6 +6,14 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- The class template no longer labels its `..>` dependency edge. The `uses` label sat on its own edge with Linux fonts,
+  so the template failed its own check there.
+- Linux fonts: Java renders in DejaVu Sans (about 12 % wider) unless fontconfig prefers Liberation Sans, even with
+  both installed. `docs/INSTALL-RHEL.md` and `references/toolchain.md` now set that preference with a drop-in file, and
+  `references/labels-and-text.md` no longer claims a 2-5 % width shift.
+
 ## [0.1.0] - 2026-10-14
 
 First public release.
