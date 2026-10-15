@@ -29,7 +29,7 @@ expect "$ROOT/tests/fixtures/too-wide.puml"         16:9 "aspect" ""
 expect "$ROOT/tests/fixtures/group-label.puml"      ""   "group-label-crosses-lifeline" ""
 # sequence arrows across intermediate lifelines: frames, dividers, self-messages, notes and activations do not count
 got=$("$SK/scripts/puml-check" "$ROOT/tests/fixtures/lifeline-spans.puml" --format json --out "$OUT" | python3 -c 'import json,sys; r=json.load(sys.stdin); i=[x["detail"] for x in r["issues"] if x["kind"]=="message-spans-lifelines"]; print(r["edge_crossings"], r["lifeline_crossings"], i[0].split(" (")[0] if i else "-")')
-want="None 5 3 of 8 messages cross the lifelines between their participants"
+want="None 7 4 of 9 messages cross the lifelines between their participants"
 if [ "$got" = "$want" ]; then echo "ok   sequence lifeline crossings"; else echo "FAIL sequence lifeline crossings: got '$got', want '$want'"; fail=1; fi
 expect "$ROOT/tests/fixtures/group-label-centred.puml" "" "group-label-crosses-lifeline" ""
 expect "$ROOT/tests/fixtures/message-centred.puml" ""  "message-crosses-lifeline" ""

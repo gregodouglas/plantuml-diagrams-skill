@@ -583,7 +583,10 @@ def analyse(svg_path, target, fit_width, src_lines=()):
         def lifeline_at(x):
             near = [l for l in xs if abs(l - x) <= 12]
             return min(near, key=lambda l: abs(l - x)) if near else None
+        # arrowheads: small polygons (->), or short diagonal lines (->> open head, -\\ half head, ->x cross)
         heads = [sh["box"] for sh in shapes if sh["tag"] == "polygon" and sh["box"][2] - sh["box"][0] <= 16]
+        heads += [bbox_of_points([p, q]) for p, q, st, da in out["lines"]
+                  if abs(p[0] - q[0]) > 0.5 and abs(p[1] - q[1]) > 0.5 and math.hypot(q[0] - p[0], q[1] - p[1]) < 20]
         def has_head(p, q):
             return any(h[1] - 1 <= p[1] <= h[3] + 1 and h[0] - 8 <= x <= h[2] + 8 for h in heads for x in (p[0], q[0]))
         # participant names: texts in the head boxes that end where the lifelines start, or (actor, database) just
