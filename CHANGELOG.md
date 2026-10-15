@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-15
+
 ### Added
 
 - `puml-check` reports `message-spans-lifelines` (info) for sequence diagrams: how many messages are drawn across the
@@ -60,5 +62,6 @@ First public release.
 - Regression tests: templates, fixtures, scaffolder round-trip, include line mapping, state counts, stale renders,
   frontmatter, portability and private-name guards.
 
-[Unreleased]: https://github.com/gregodouglas/plantuml-diagrams-skill/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/gregodouglas/plantuml-diagrams-skill/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/gregodouglas/plantuml-diagrams-skill/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/gregodouglas/plantuml-diagrams-skill/releases/tag/v0.1.0
