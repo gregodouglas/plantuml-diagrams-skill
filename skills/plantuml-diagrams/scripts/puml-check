@@ -546,6 +546,16 @@ def analyse(svg_path, target, fit_width, src_lines=()):
                 if needle in s:
                     return i
             return None
+        # participant names: declared display names and aliases, plus implicit participants named by messages
+        pwords = set()
+        for l in src_lines:
+            m = re.match(r'\s*(?:participant|actor|boundary|control|entity|database|collections|queue)\s+(?:"([^"]+)"|(\S+))(?:\s+as\s+(\S+))?', l)
+            if m:
+                pwords |= set(re.sub(r"\\n", " ", m.group(1) or m.group(2) or "").split()) | {m.group(3) or ""}
+            m = re.match(r"\s*([\w.]+)\s*<?[-.]+[>x\\/]*\s*([\w.]+)\s*(?::|$)", l)
+            if m:
+                pwords |= set(m.groups())
+        pwords.discard("")
         for t in T:
             b = t["box"]
             if any(opaque(sh, t) and contains(sh["box"], b, 1.0) for sh in shapes):
@@ -554,9 +564,9 @@ def analyse(svg_path, target, fit_width, src_lines=()):
                 continue
             cx = (b[0] + b[2]) / 2
             hits = [x for x in xs if b[0] + 2 < x < b[2] - 2]
-            if not t["text"].startswith("["):
-                # actor/database labels sit centred on their own lifeline: that one does not count. Group labels
-                # start at the frame's left edge, so one that is centred on a lifeline is crossed by it.
+            if set(t["text"].split()) <= pwords:
+                # a participant name sits centred on its own lifeline (actors and databases up to 5 px off): that
+                # one does not count. Message and group labels get no such pass, even when centred on a lifeline.
                 hits = [x for x in hits if abs(x - cx) >= 8]
             if hits and t["text"].startswith("["):
                 # PlantUML starts else/loop labels ~11 px left of the group's first lifeline, so that one always touches
@@ -573,7 +583,10 @@ def analyse(svg_path, target, fit_width, src_lines=()):
         def lifeline_at(x):
             near = [l for l in xs if abs(l - x) <= 12]
             return min(near, key=lambda l: abs(l - x)) if near else None
+        # arrowheads: small polygons (->), or short diagonal lines (->> open head, -\\ half head, ->x cross)
         heads = [sh["box"] for sh in shapes if sh["tag"] == "polygon" and sh["box"][2] - sh["box"][0] <= 16]
+        heads += [bbox_of_points([p, q]) for p, q, st, da in out["lines"]
+                  if abs(p[0] - q[0]) > 0.5 and abs(p[1] - q[1]) > 0.5 and math.hypot(q[0] - p[0], q[1] - p[1]) < 20]
         def has_head(p, q):
             return any(h[1] - 1 <= p[1] <= h[3] + 1 and h[0] - 8 <= x <= h[2] + 8 for h in heads for x in (p[0], q[0]))
         # participant names: texts in the head boxes that end where the lifelines start, or (actor, database) just

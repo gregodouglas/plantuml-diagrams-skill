@@ -1,6 +1,6 @@
 @startuml
-' messages between non-neighbours cross the lifelines in between: 3 such messages, 5 crossings
-' (frames, dividers, self-messages, notes and activation bars must not count)
+' messages between non-neighbours cross the lifelines in between: 4 such messages, 7 crossings
+' (an open ->> head counts; frames, dividers, self-messages, notes and activation bars must not count)
 actor "User" as u
 participant "Gateway" as gw
 participant "Orders" as ord
@@ -21,6 +21,7 @@ else out of stock
 end
 u -> ord : poll status
 u -> db : direct read
+u ->> db : async read
 db --> u : rows
 ord --> gw : created
 deactivate ord
