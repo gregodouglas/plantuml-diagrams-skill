@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `puml-check` reports `message-spans-lifelines` (info) for sequence diagrams: how many messages are drawn across the
+  lifelines between their two participants, naming the worst pairs. The summary line prints
+  `crossings=n/a lifeline-crossings=N` for sequence diagrams instead of `crossings=0`, and the JSON `edge_crossings`
+  is `null` for them.
 ### Changed
 
 - The check-and-fix loop no longer stops at a fixed 3 rounds. Counting `warn` lines from the first run that renders,

@@ -25,7 +25,7 @@ web    --> cust  : confirmation
 ## Rules
 - **Declare every participant up front, in left-to-right reading order**, with a short alias. Otherwise first mention sets the order and a later edit reshuffles the diagram.
 - Order participants so that most messages go between neighbours. A message between distant participants is drawn across
-  the lifelines in between and its text is crossed by them (puml-check: `message-crosses-lifeline`).
+  the lifelines in between and its text is crossed by them (puml-check: `message-crosses-lifeline`; the arrows alone: `message-spans-lifelines`, info).
 - Message text ≤ ~40 chars; the preamble wraps at 180 px (`maxMessageSize` + `arrow { MaximumWidth }`). Put payload detail in a `note right`.
 - `alt`/`loop`/`opt` labels and `participant` names **never auto-wrap**; break them with `\n`. A long group label widens
   the gap between that pair of lifelines for the whole diagram.

@@ -47,6 +47,7 @@ fc-cache -f && fc-match sans-serif   # "Liberation Sans"
 | `edge-crosses-nested-borders` (info) | an edge crosses 3+ container borders (line drawn over boxes) | link the container instead of the inner node; flatten nesting |
 | `detached-label` | label > 5x font size from its edge | drop ortho; shorter edge |
 | `message-crosses-lifeline` | sequence text crossed by intermediate lifelines | reorder participants, shorten, wrap |
+| `message-spans-lifelines` (info) | sequence arrows drawn across the lifelines between their two participants; names the worst pairs. The summary line prints `crossings=n/a lifeline-crossings=N` for sequence diagrams | reorder participants so the named pairs are neighbours |
 | `group-label-crosses-lifeline` | an `alt`/`else`/`loop` label runs past the next lifeline (they never wrap) | 1-2 word labels; start the group at a participant further left |
 | `group-label-on-lifeline` (info) | the group's own first lifeline touches the label's first characters (always drawn there) | keep the label short |
 | `label-on-border` | an edge label lies on a container border line | shorten, lengthen the edge (`--->`), move text into the node |
