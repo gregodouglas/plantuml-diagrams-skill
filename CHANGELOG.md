@@ -14,6 +14,8 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 
+- `puml-check` now reports a message or `alt`/`else`/`loop` label that is crossed by a lifeline running through its
+  middle. Before, any text centred on a lifeline was skipped as if it were a participant name.
 - The class template no longer labels its `..>` dependency edge. The `uses` label sat on its own edge with Linux fonts,
   so the template failed its own check there.
 - Linux fonts: Java renders in DejaVu Sans (about 12 % wider) unless fontconfig prefers Liberation Sans, even with

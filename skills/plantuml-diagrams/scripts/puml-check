@@ -546,6 +546,16 @@ def analyse(svg_path, target, fit_width, src_lines=()):
                 if needle in s:
                     return i
             return None
+        # participant names: declared display names and aliases, plus implicit participants named by messages
+        pwords = set()
+        for l in src_lines:
+            m = re.match(r'\s*(?:participant|actor|boundary|control|entity|database|collections|queue)\s+(?:"([^"]+)"|(\S+))(?:\s+as\s+(\S+))?', l)
+            if m:
+                pwords |= set(re.sub(r"\\n", " ", m.group(1) or m.group(2) or "").split()) | {m.group(3) or ""}
+            m = re.match(r"\s*([\w.]+)\s*<?[-.]+[>x\\/]*\s*([\w.]+)\s*(?::|$)", l)
+            if m:
+                pwords |= set(m.groups())
+        pwords.discard("")
         for t in T:
             b = t["box"]
             if any(opaque(sh, t) and contains(sh["box"], b, 1.0) for sh in shapes):
@@ -553,9 +563,11 @@ def analyse(svg_path, target, fit_width, src_lines=()):
             if b[3] < ly0 or b[1] > ly1:                 # title/caption above or below the lifelines
                 continue
             cx = (b[0] + b[2]) / 2
-            if any(abs(x - cx) < 8 for x in xs):          # actor/database labels centred on their own lifeline
-                continue
             hits = [x for x in xs if b[0] + 2 < x < b[2] - 2]
+            if set(t["text"].split()) <= pwords:
+                # a participant name sits centred on its own lifeline (actors and databases up to 5 px off): that
+                # one does not count. Message and group labels get no such pass, even when centred on a lifeline.
+                hits = [x for x in hits if abs(x - cx) >= 8]
             if hits and t["text"].startswith("["):
                 # PlantUML starts else/loop labels ~11 px left of the group's first lifeline, so that one always touches
                 # the opening characters; only a lifeline further into the text means the label is too long
