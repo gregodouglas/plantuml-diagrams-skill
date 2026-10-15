@@ -1,0 +1,41 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  run-sh:
+    runs-on: ubuntu-24.04
+    env:
+      PLANTUML_VERSION: 1.2026.8
+      PLANTUML_SHA256: 5e1ecfa8ecd32c90b03bbf3b1eb6f020943f98ab0fcf4032be31a0002ee2c462
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Install Graphviz and fonts
+        # Liberation Sans is metric-compatible with the Helvetica the house style names (docs/INSTALL-RHEL.md)
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends graphviz fontconfig fonts-liberation fonts-dejavu-core
+      - name: Install PlantUML (pinned, checksum verified)
+        run: |
+          mkdir -p "$RUNNER_TEMP/plantuml"
+          jar="$RUNNER_TEMP/plantuml/plantuml-$PLANTUML_VERSION.jar"
+          curl -fsSLo "$jar" "https://github.com/plantuml/plantuml/releases/download/v$PLANTUML_VERSION/plantuml-$PLANTUML_VERSION.jar"
+          echo "$PLANTUML_SHA256  $jar" | sha256sum -c -
+          echo "PLANTUML_JAR=$jar" >> "$GITHUB_ENV"
+      - name: Versions
+        run: |
+          java -Djava.awt.headless=true -jar "$PLANTUML_JAR" -version | head -1
+          dot -V
+          python3 --version
+      - name: tests/run.sh
+        run: tests/run.sh
