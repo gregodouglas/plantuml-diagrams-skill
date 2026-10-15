@@ -1,0 +1,98 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  run-sh:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        # 15.1.1: the Graphviz the references were verified with (official .deb, checksum verified).
+        # distro: Ubuntu's own 2.43, close to what RHEL 8/9 ship; layouts differ, so it warns but does not gate
+        # (known: the dfd template comes out taller than 16:9).
+        graphviz: ["15.1.1", "distro"]
+    name: run.sh (Graphviz ${{ matrix.graphviz }})
+    timeout-minutes: 20
+    env:
+      GRAPHVIZ_DEB_SHA256: 02c70b9d42149f5e2ba0e3882643b22904720de50a0a3da84a30b8f32e8a1497
+      PLANTUML_VERSION: 1.2026.8
+      PLANTUML_SHA256: 5e1ecfa8ecd32c90b03bbf3b1eb6f020943f98ab0fcf4032be31a0002ee2c462
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Install fonts and Graphviz
+        # Liberation Sans is metric-compatible with the Helvetica the house style names (docs/INSTALL-RHEL.md)
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends fontconfig fonts-liberation
+          if [ "${{ matrix.graphviz }}" = distro ]; then
+            sudo apt-get install -y -q --no-install-recommends graphviz
+          else
+            deb="$RUNNER_TEMP/graphviz.deb"
+            curl -fsSLo "$deb" "https://gitlab.com/api/v4/projects/4207231/packages/generic/graphviz-releases/${{ matrix.graphviz }}/ubuntu_24.04_graphviz-${{ matrix.graphviz }}-cmake.deb"
+            echo "$GRAPHVIZ_DEB_SHA256  $deb" | sha256sum -c -
+            sudo apt-get install -y -q "$deb"
+          fi
+      - name: Prefer Liberation Sans
+        # Java does not find "Helvetica" and falls back to its Dialog font, which fontconfig resolves to the first
+        # sans-serif family: DejaVu Sans (about 12% wider) unless Liberation Sans is preferred
+        run: |
+          mkdir -p ~/.config/fontconfig/conf.d
+          cat > ~/.config/fontconfig/conf.d/50-plantuml-liberation.conf <<'XML'
+          <?xml version="1.0"?>
+          <!DOCTYPE fontconfig SYSTEM "fonts.dtd">
+          <fontconfig>
+            <alias><family>sans-serif</family><prefer><family>Liberation Sans</family></prefer></alias>
+            <alias><family>Helvetica</family><prefer><family>Liberation Sans</family></prefer></alias>
+          </fontconfig>
+          XML
+          fc-cache -f >/dev/null
+          echo "sans-serif -> $(fc-match sans-serif)"; echo "Helvetica  -> $(fc-match Helvetica)"
+      - name: Install PlantUML (pinned, checksum verified)
+        run: |
+          mkdir -p "$RUNNER_TEMP/plantuml"
+          jar="$RUNNER_TEMP/plantuml/plantuml-$PLANTUML_VERSION.jar"
+          curl -fsSLo "$jar" "https://github.com/plantuml/plantuml/releases/download/v$PLANTUML_VERSION/plantuml-$PLANTUML_VERSION.jar"
+          echo "$PLANTUML_SHA256  $jar" | sha256sum -c -
+          echo "PLANTUML_JAR=$jar" >> "$GITHUB_ENV"
+      - name: Versions
+        run: |
+          java -Djava.awt.headless=true -jar "$PLANTUML_JAR" -version | head -1
+          dot -V
+          python3 --version
+      - name: tests/run.sh
+        # on the distro Graphviz the dfd template's aspect FAIL is known; any other FAIL, or a crash, fails the job
+        env:
+          TMPDIR: ${{ runner.temp }}
+        run: |
+          if [ "${{ matrix.graphviz }}" != distro ]; then tests/run.sh; exit; fi
+          tests/run.sh | tee "$RUNNER_TEMP/run.log" || true
+          known='^FAIL .*/templates/dfd\.puml: did not expect /\./ in \[aspect\]$'
+          if grep -q '^FAIL' "$RUNNER_TEMP/run.log"; then
+            grep -q -E "$known" "$RUNNER_TEMP/run.log" && echo "::warning title=Graphviz 2.43::dfd template is taller than 16:9 (known)"
+          fi
+          unexpected=$(grep '^FAIL' "$RUNNER_TEMP/run.log" | grep -v -E "$known" || true)
+          if [ -n "$unexpected" ] || ! grep -q '^ok   puml-render error exit' "$RUNNER_TEMP/run.log"; then
+            echo "unexpected failures on Graphviz 2.43:"; printf '%s\n' "$unexpected"; exit 1
+          fi
+      - name: Keep the renders
+        if: failure() || matrix.graphviz == 'distro'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: renders-graphviz-${{ matrix.graphviz }}
+          path: ${{ runner.temp }}/puml-tests/*.svg
+          retention-days: 7

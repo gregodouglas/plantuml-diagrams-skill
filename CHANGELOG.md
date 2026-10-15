@@ -14,8 +14,6 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 
-- `puml-check` now reports a message or `alt`/`else`/`loop` label that is crossed by a lifeline running through its
-  middle. Before, any text centred on a lifeline was skipped as if it were a participant name.
 
 ## [0.1.0] - 2026-10-14
 
