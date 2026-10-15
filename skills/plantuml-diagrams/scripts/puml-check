@@ -301,14 +301,17 @@ def where(o):
         return f"{o[0]}:{o[1]} (src line {int(o[2]) + 1})"
     return f"{o[0]}:{o[1]}"
 
+def short_name(names, key):
+    """An element's alias: the last part of its qualified name (SVG ids map to names via data-qualified-name)."""
+    return (names.get(key) or key or "").split(".")[-1]
+
 def make_resolver(src_lines, names, edges):
     """SVG data-source-line counts lines after !include and macro expansion, so for C4, awslib and other
     includes it points into the library. Keep it when that source line mentions the element's alias;
     otherwise find the line in the user's file that declares the alias (or links both endpoints)."""
     n_src = len(src_lines)
     def alias(key):
-        q = names.get(key, key) or ""
-        return q.split(".")[-1]
+        return short_name(names, key)
     def mentions(line, a):
         return bool(a) and re.search(r"(?<![\w$])" + re.escape(a) + r"(?!\w)", line) is not None
     def find(pred):
@@ -638,6 +641,47 @@ def analyse(svg_path, target, fit_width, src_lines=()):
         for j in range(i + 1, len(keys)):
             if any(segs_cross(*a, *b) for a in segs[keys[i]] for b in segs[keys[j]]):
                 crossings += 1
+    # 6a. edges that share a node and leave it along one trunk: the picture reads as one edge with stacked labels.
+    # Measure how long two such edges run within 3 px of each other once they are 20 px clear of the shared node.
+    def resample(k, step=4.0):
+        pts = []
+        for p, q in segs[k]:
+            n = max(1, math.ceil(math.hypot(q[0] - p[0], q[1] - p[1]) / step))
+            pts += [(p[0] + (q[0] - p[0]) * i / n, p[1] + (q[1] - p[1]) * i / n) for i in range(n)]
+        return pts
+    def seg_dist(pt, p, q):
+        dx, dy = q[0] - p[0], q[1] - p[1]; ll = dx * dx + dy * dy
+        t = 0 if not ll else max(0, min(1, ((pt[0] - p[0]) * dx + (pt[1] - p[1]) * dy) / ll))
+        return math.hypot(pt[0] - p[0] - t * dx, pt[1] - p[1] - t * dy)
+    alias = lambda k: short_name(out["names"], k)
+    samples = {k: resample(k) for k in keys}
+    bundles = {}
+    for i in range(len(keys)):
+        for j in range(i + 1, len(keys)):
+            ea, eb = (E[keys[i]].get("ends") or (None, None)), (E[keys[j]].get("ends") or (None, None))
+            shared = {x for x in ea if x} & {x for x in eb if x}
+            if len(shared) != 1 or set(ea) == set(eb): continue
+            node = shared.pop(); nb = ent_boxes.get(node)
+            if not nb: continue
+            nbox = nb["box"]
+            far = lambda pt: box_dist(nbox, pt) > 20
+            run = sum(4.0 for pt in samples[keys[i]] if far(pt) and min((seg_dist(pt, p, q) for p, q in segs[keys[j]]), default=99) <= 3)
+            if run >= 40:
+                bundles.setdefault(node, []).append((keys[i], keys[j], run))
+    trunks = []   # pairs that share a run, grouped per node into separate trunks (connected components)
+    for node, pairs in bundles.items():
+        groups = []
+        for a, b, run in pairs:
+            hit = [g for g in groups if a in g or b in g]
+            g = {a: run, b: run}
+            for h in hit:
+                groups.remove(h); g.update({k: max(v, g.get(k, 0)) for k, v in h.items()})
+            groups.append(g)
+        trunks += [(node, g) for g in groups]
+    for node, es in trunks:
+        others = sorted({alias(x) for k in es for x in E[k]["ends"] if x and x != node})
+        first = min(es, key=lambda k: src_line(E[k]["owner"]) or 10**9)
+        add("bundled-edges", f"{len(es)} edges at {alias(node)} (to {', '.join(others)}) leave it along one shared trunk for about {max(es.values()):.0f}px, so they read as one line with their labels crowded beside it. Give each target its own rank (---> on one edge), move the detail into the node's text ('writes PDFs, sends email'), or link to a package", src_line(E[first]["owner"]), at=where(E[first]["owner"]))
     # sequence messages are not edges: report null rather than a 0 that reads as "no crossings"
     rep["edge_crossings"] = None if dtype == "SEQUENCE" else crossings
     if crossings and len(E) and crossings >= max(4, len(E)):

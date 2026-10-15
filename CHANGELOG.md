@@ -12,6 +12,9 @@ All notable changes to this project are documented here. The format follows
   lifelines between their two participants, naming the worst pairs. The summary line prints
   `crossings=n/a lifeline-crossings=N` for sequence diagrams instead of `crossings=0`, and the JSON `edge_crossings`
   is `null` for them.
+- `puml-check` reports `bundled-edges` when two or more edges at one node leave it along one shared trunk, so they
+  read as one line with their labels crowded beside it.
+
 ### Changed
 
 - The check-and-fix loop no longer stops at a fixed 3 rounds. Counting `warn` lines from the first run that renders,
