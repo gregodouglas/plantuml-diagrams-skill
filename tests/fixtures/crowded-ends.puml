@@ -1,7 +1,8 @@
 @startuml
-' with nodesep 5 the multiplicities of two edges at Payment crowd without sharing a trunk (nodesep 15 clears them)
+' with nodesep 1 the multiplicities of two edges at Payment crowd without sharing a trunk (1.8 px apart, side by
+' side, so font height does not move them; nodesep 12 clears them)
 hide circle
-skinparam nodesep 5
+skinparam nodesep 1
 class Order
 class Payment
 class Refund
