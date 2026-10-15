@@ -1,0 +1,50 @@
+@startuml
+' ---- house style (print) ----
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam maxMessageSize 160
+skinparam wrapWidth 160
+<style>
+root {
+  FontName Helvetica
+  FontSize 12
+  FontColor #1F2937
+}
+element { BackgroundColor #F1F5F9; LineColor #475569; LineThickness 1; RoundCorner 6 }
+arrow   { LineColor #475569; LineThickness 1; FontSize 11; MaximumWidth 160 }
+note    { BackgroundColor #FFF7E0; LineColor #B45309; FontSize 11; MaximumWidth 200 }
+title   { FontSize 15; FontStyle bold }
+caption { FontSize 11; FontColor #64748B }
+legend  { FontSize 11; BackgroundColor white; LineColor #CBD5E1; MaximumWidth 320 }
+.accent { BackgroundColor #1D4ED8; FontColor white; LineColor #1E3A8A }
+.alert  { BackgroundColor #FEE2E2; FontColor #7F1D1D; LineColor #B91C1C }
+.muted  { BackgroundColor #F8FAFC; FontColor #64748B; LineColor #CBD5E1 }
+</style>
+hide stereotype
+' ---- layout (Graphviz dot) ----
+skinparam linetype polyline
+skinparam nodesep 50
+skinparam ranksep 60
+top to bottom direction
+
+' ---- body ----
+title Venue Ticketing on AWS: edge (production)
+
+actor "Fans and staff" as users
+[Route 53\ntickets.example.com\nstaff.example.com\napi.example.com] as r53
+[CloudFront] as cf
+[AWS WAF\ncommon rules, rate limit\nPOST /orders, /holds] as waf
+[ACM\ncertificates] as acm
+database "S3 static assets\nprivate, origin access control" as s3
+[Application\nLoad Balancer] as alb
+[Payment provider\nwebhooks] as pay <<muted>>
+
+users --> r53 : resolve
+users --> cf : HTTPS
+cf -> waf : filtered by
+cf --> s3 : SPAs
+cf --> alb : api host
+acm -> cf : cert
+acm -> alb : cert
+pay --> cf : webhook
+@enduml

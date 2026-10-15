@@ -1,0 +1,83 @@
+@startuml
+' ---- house style (print) ----
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam maxMessageSize 160
+skinparam wrapWidth 160
+<style>
+root {
+  FontName Helvetica
+  FontSize 12
+  FontColor #1F2937
+  LineColor #475569
+  LineThickness 1
+}
+element { BackgroundColor #F1F5F9; LineColor #475569; RoundCorner 6 }
+arrow   { LineColor #475569; FontSize 11; MaximumWidth 160 }
+note    { BackgroundColor #FFF7E0; LineColor #B45309; FontSize 11; MaximumWidth 200 }
+document { title { FontSize 15; FontStyle bold; LineThickness 0 } }
+actor   { LineThickness 1 }
+caption { FontSize 11; FontColor #64748B }
+legend  { FontSize 11; BackgroundColor white; LineColor #CBD5E1; MaximumWidth 320 }
+.accent { BackgroundColor #1D4ED8; FontColor white; LineColor #1E3A8A }
+.muted  { BackgroundColor #F8FAFC; FontColor #64748B; LineColor #CBD5E1 }
+</style>
+hide stereotype
+' ---- layout (Graphviz dot) ----
+skinparam linetype polyline
+skinparam nodesep 50
+skinparam ranksep 60
+top to bottom direction
+
+title Network boundary overview
+
+actor "Remote users" as remote
+cloud "Internet" as inet
+
+rectangle "HQ site" as hq {
+  node "Edge FW\nHA pair" as edge <<accent>>
+  node "DMZ\n172.16.10.0/24" as dmz #FFF7ED
+  node "Core switch +\ninternal FW" as core
+  node "Servers\n10.10.10.0/24" as srv #F0FDF4
+  node "Users\n10.10.20.0/24" as usr #F0FDF4
+  node "Mgmt / SIEM\n10.10.99.0/24" as mgmt #F5F3FF
+  node "OT / ICS\n10.50.0.0/24" as ot #FEFCE8
+  node "IoT / cameras\n10.60.0.0/24" as iot #FEFCE8
+  node "Guest WiFi\n192.168.100.0/24" as guest #FEF2F2
+}
+rectangle "Branch site" as br {
+  node "Branch\nSD-WAN FW" as brfw
+  node "Branch LAN\n10.20.0.0/16" as brlan #F0FDF4
+}
+cloud "Microsoft cloud" as msft {
+  node "Azure hub VNet\n10.100.0.0/16" as hub
+  node "Entra ID / M365" as entra
+}
+
+remote --> inet  : SSL VPN 443
+inet   --> edge  : dual ISP
+edge   --> dmz   : HTTPS 443, SMTP 25
+edge   --> guest : internet only
+edge   --> core  : inside transit
+core   --> srv
+core   --> usr
+core   --> mgmt
+core   --> ot    : OT FW, allow-list
+core   --> iot   : deny by default
+edge   --> brfw  : SD-WAN IPsec
+brfw   --> brlan
+edge   --> hub   : ExpressRoute
+srv    --> entra : Entra Connect 443
+
+legend right
+  |= Fill |= Trust level |
+  |<#FEF2F2>   | untrusted (guest) |
+  |<#FFF7ED>   | DMZ: internet-facing |
+  |<#F0FDF4>   | internal: trusted |
+  |<#F5F3FF>   | management: restricted |
+  |<#FEFCE8>   | OT / IoT: isolated |
+  |<#1D4ED8>   | perimeter enforcement |
+  Inter-zone traffic crosses the internal FW (default deny);
+  all firewalls log to SIEM (syslog 514). Detail: large-hq-*, large-branch, large-cloud.
+endlegend
+@enduml

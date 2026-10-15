@@ -1,0 +1,17 @@
+@startuml
+actor "Customer" as cust
+participant "Web App" as web
+participant "Order Service" as orders
+participant "Payment Service" as pay
+database "Orders DB" as db
+cust -> web : clicks "Place order" with cart contents and shipping address
+web -> orders : POST /orders {cart, shipping, paymentToken}
+orders -> db : INSERT order (status=PENDING)
+orders -> pay : authorize(paymentToken, amount)
+alt authorization succeeded
+  pay --> orders : AUTH_OK (authId)
+  orders -> db : UPDATE order SET status=CONFIRMED
+else authorization declined by issuer or fraud rules
+  orders -> db : UPDATE order SET status=DECLINED
+end
+@enduml

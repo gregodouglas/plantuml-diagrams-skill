@@ -1,0 +1,70 @@
+@startuml
+' ---- house style (print) ----
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam maxMessageSize 160
+skinparam wrapWidth 160
+' NOTE: title style moved under document { } - a top-level title { LineThickness 0 } strips node borders in SVG/PDF (see NOTES.md)
+<style>
+root {
+  FontName Helvetica
+  FontSize 12
+  FontColor #1F2937
+  LineColor #475569
+  LineThickness 1
+}
+element { BackgroundColor #F1F5F9; LineColor #475569; RoundCorner 6 }
+arrow   { LineColor #475569; FontSize 11; MaximumWidth 160 }
+note    { BackgroundColor #FFF7E0; LineColor #B45309; FontSize 11; MaximumWidth 200 }
+document { title { FontSize 15; FontStyle bold; LineThickness 0 } }
+caption { FontSize 11; FontColor #64748B }
+legend  { FontSize 11; BackgroundColor white; LineColor #CBD5E1; MaximumWidth 320 }
+.accent { BackgroundColor #1D4ED8; FontColor white; LineColor #1E3A8A }
+.muted  { BackgroundColor #F8FAFC; FontColor #64748B; LineColor #CBD5E1 }
+</style>
+hide stereotype
+' ---- layout (Graphviz dot) ----
+skinparam linetype polyline
+skinparam nodesep 50
+skinparam ranksep 60
+top to bottom direction
+
+title Platform services - GitOps, certificates, observability, storage
+
+' Takeaway: every platform add-on is installed by Argo CD and talks to one
+' external dependency each (Git, ACME + DNS, secrets manager, pager, S3).
+
+cloud "Git repo" as git
+rectangle "ns: platform" as plat {
+  [Argo CD\napp-of-apps] as argo <<accent>>
+  [cert-manager] as cert
+  [ClusterIssuer\nletsencrypt-prod] as issuer
+  [ingress-nginx] as ing
+  [external-secrets] as eso
+  [Prometheus] as prom
+  [Alertmanager] as am
+  [Grafana] as graf
+}
+rectangle "ns: longhorn-system" as lhs {
+  [Longhorn manager\n+ CSI driver] as lh
+}
+cloud "Let's Encrypt" as acme
+cloud "DNS provider API" as dns
+cloud "Secrets manager" as vault
+cloud "On-call pager" as pager
+storage "S3 bucket\n(volume backups)" as s3b
+
+argo   --> git    : pulls manifests
+argo   --> lhs    : installs
+cert   --> issuer : uses
+issuer --> acme   : ACME order
+issuer --> dns    : DNS-01 TXT
+cert   --> ing    : TLS secrets
+eso    --> vault  : reads secrets
+graf   --> prom   : queries
+prom   --> ing    : scrapes
+prom   --> lh     : scrapes
+prom   --> am     : fires alerts
+am     --> pager  : pages
+lh     --> s3b    : backups
+@enduml

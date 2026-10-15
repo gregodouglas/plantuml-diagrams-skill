@@ -1,0 +1,10 @@
+{
+  "name": "plantuml-diagrams",
+  "version": "0.1.0",
+  "description": "PlantUML diagrams that render clean, do not overlap, and fit slides or pages: skill + puml-new / puml-check / puml-render helpers.",
+  "author": { "name": "Gregory Douglas" },
+  "homepage": "https://github.com/gregodouglas/plantuml-diagrams-skill",
+  "repository": "https://github.com/gregodouglas/plantuml-diagrams-skill",
+  "license": "MIT",
+  "keywords": ["plantuml", "diagrams", "uml", "c4", "agent-skill"]
+}

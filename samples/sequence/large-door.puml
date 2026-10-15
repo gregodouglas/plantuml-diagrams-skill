@@ -1,0 +1,49 @@
+@startuml
+' ---- house style (print) ----
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam maxMessageSize 160
+skinparam wrapWidth 160
+<style>
+root {
+  FontName Helvetica
+  FontSize 12
+  FontColor #1F2937
+}
+element { BackgroundColor #F1F5F9; LineColor #475569; LineThickness 1; RoundCorner 6 }
+arrow   { LineColor #475569; LineThickness 1; FontSize 11; MaximumWidth 160 }
+note    { BackgroundColor #FFF7E0; LineColor #B45309; FontSize 11; MaximumWidth 200 }
+title   { FontSize 15; FontStyle bold }
+caption { FontSize 11; FontColor #64748B }
+legend  { FontSize 11; BackgroundColor white; LineColor #CBD5E1; MaximumWidth 320 }
+.accent { BackgroundColor #1D4ED8; FontColor white; LineColor #1E3A8A }
+.alert  { BackgroundColor #FEE2E2; FontColor #7F1D1D; LineColor #B91C1C }
+.muted  { BackgroundColor #F8FAFC; FontColor #64748B; LineColor #CBD5E1 }
+sequenceDiagram {
+  participant { Margin 0 90 }
+  lifeLine    { LineColor #94A3B8 }
+  group       { FontSize 11 }
+}
+</style>
+hide stereotype
+
+' ---- body ----
+title Door scanning: offline-first
+hide footbox
+autonumber "<b>00"
+
+actor       "Venue staff"    as staff
+participant "Staff app"      as app
+participant "Ticketing\nAPI" as api
+
+app -> api : GET /events/{id}/door-list
+api --> app : ticket ids, barcodes, status
+staff -> app : scan barcode
+note over staff, app : checked on the device:\ngreen valid, red void or unknown,\namber already scanned here
+loop 30 s
+  app -> api : POST /events/{id}/scans
+  note over app, api : every 30 s, online only. Door records each scan\nand marks the ticket used
+  api --> app : conflicts
+end
+app --> staff : show conflicts
+@enduml

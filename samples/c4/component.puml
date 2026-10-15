@@ -1,0 +1,75 @@
+@startuml
+!include <C4/C4_Component>
+' ---- house style (slide) ----
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam maxMessageSize 180
+skinparam wrapWidth 180
+<style>
+root {
+  FontName Helvetica
+  FontSize 14
+  FontColor #1F2937
+}
+element { BackgroundColor #F1F5F9; LineColor #475569; LineThickness 1.2; RoundCorner 6 }
+arrow   { LineColor #475569; LineThickness 1.2; FontSize 12; MaximumWidth 180 }
+note    { BackgroundColor #FFF7E0; LineColor #B45309; FontSize 12; MaximumWidth 220 }
+title   { FontSize 18; FontStyle bold }
+caption { FontSize 12; FontColor #64748B }
+legend  { FontSize 12; BackgroundColor white; LineColor #CBD5E1; MaximumWidth 320 }
+.accent { BackgroundColor #1D4ED8; FontColor white; LineColor #1E3A8A }
+.alert  { BackgroundColor #FEE2E2; FontColor #7F1D1D; LineColor #B91C1C }
+.muted  { BackgroundColor #F8FAFC; FontColor #64748B; LineColor #CBD5E1 }
+</style>
+hide stereotype
+' ---- layout (Graphviz dot) ----
+skinparam linetype polyline
+skinparam nodesep 50
+skinparam ranksep 60
+LAYOUT_TOP_DOWN()
+
+' ---- body ----
+title Ticketing API: components
+' C4 component view: the inside of ONE container. Component(alias, label, technology, description):
+' technology comes before the description. Show only the containers and externals the components use.
+
+AddElementTag("accent", $bgColor="#1D4ED8", $fontColor="#FFFFFF", $borderColor="#1E3A8A", $legendText="Component in focus")
+
+System_Ext(idp, "Identity provider", "OIDC")
+System_Ext(pay, "Payment provider", "Card payments")
+ContainerDb(db, "Database", "PostgreSQL 16", "System of record")
+ContainerDb(cache, "Seat-hold cache", "Redis", "Seat holds")
+ContainerQueue(queue, "Job queue", "SQS", "Async jobs")
+
+Container_Boundary(api, "Ticketing API") {
+  Component(auth, "Auth middleware", "", "Validates tokens, maps roles")
+  Component(catalogue, "Catalogue", "", "Venues, events, seat maps, prices")
+  Component(holds, "Holds", "", "Place, extend, release holds")
+  Component(checkout, "Checkout", "", "Orders from holds, starts payment")
+  Component(payments, "Payments", "", "Provider client, webhook check", $tags="accent")
+  Component(ticketing, "Ticketing", "", "Issue and void tickets")
+  Component(door, "Door", "", "Scan batches, duplicates")
+  Component(refunds, "Refunds", "", "Refund requests, approvals")
+}
+
+Rel(auth, idp, "Validates tokens", "JWKS")
+Rel(catalogue, db, " ")
+Rel(holds, cache, "Holds seats")
+Rel(checkout, holds, "Uses")
+Rel(checkout, payments, "Uses")
+Rel(checkout, db, "Reads/writes")
+Rel(payments, pay, "Authorizes, refunds")
+Rel(payments, queue, "Enqueues webhooks")
+Rel(ticketing, db, " ")
+Rel(ticketing, queue, "Enqueues PDF jobs")
+Rel(door, db, " ")
+Rel(refunds, payments, "Uses")
+Rel(refunds, ticketing, "Uses")
+Rel(refunds, db, " ")
+
+Lay_D(holds, auth)
+Lay_D(payments, catalogue)
+Lay_D(ticketing, door)
+
+SHOW_LEGEND()
+@enduml

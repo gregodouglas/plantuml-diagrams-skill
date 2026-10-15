@@ -1,0 +1,4 @@
+@startuml
+A -> B : ok
+this is not valid [[[
+@enduml

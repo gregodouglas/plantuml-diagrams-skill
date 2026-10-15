@@ -1,0 +1,21 @@
+@startuml
+skinparam linetype ortho
+package "Edge" {
+  [API Gateway] as gw
+}
+package "Services" {
+  [Order Service] as orders
+  [Inventory Service] as inv
+  [Notification Service] as notif
+}
+package "Data" {
+  database "Orders DB" as odb
+  queue "Event Bus" as bus
+}
+gw --> orders : create / update / cancel order
+gw --> inv : stock availability check
+orders --> odb : persist order aggregate
+orders --> bus : publish OrderCreated / OrderCancelled events
+inv --> bus : publish StockChanged events
+bus --> notif : consume events for email / SMS
+@enduml

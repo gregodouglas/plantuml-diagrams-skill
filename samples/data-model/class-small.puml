@@ -1,0 +1,115 @@
+@startuml
+' ---- house style (slide) ----
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam maxMessageSize 180
+skinparam wrapWidth 180
+<style>
+root {
+  FontName Helvetica
+  FontSize 14
+  FontColor #1F2937
+}
+element { BackgroundColor #F1F5F9; LineColor #475569; LineThickness 1.2; RoundCorner 6 }
+arrow   { LineColor #475569; LineThickness 1.2; FontSize 12; MaximumWidth 180 }
+note    { BackgroundColor #FFF7E0; LineColor #B45309; FontSize 12; MaximumWidth 220 }
+title   { FontSize 18; FontStyle bold }
+caption { FontSize 12; FontColor #64748B }
+legend  { FontSize 12; BackgroundColor white; LineColor #CBD5E1; MaximumWidth 320 }
+.accent { BackgroundColor #1D4ED8; FontColor white; LineColor #1E3A8A }
+.alert  { BackgroundColor #FEE2E2; FontColor #7F1D1D; LineColor #B91C1C }
+.muted  { BackgroundColor #F8FAFC; FontColor #64748B; LineColor #CBD5E1 }
+classDiagram {
+  class { BackgroundColor #F8FAFC }
+}
+</style>
+hide stereotype
+' ---- layout (Graphviz dot) ----
+skinparam linetype polyline
+skinparam nodesep 90
+skinparam ranksep 80
+top to bottom direction
+
+' ---- body ----
+title Venue Ticketing: orders, payments, refunds, tickets (class)
+hide empty members
+skinparam classAttributeIconSize 0
+skinparam groupInheritance 2
+
+' Keep members to what the reader needs (3-6 per class). Use notes for detail.
+' Multiplicities sit at their own end: A "1" --> "0..*" B puts 0..* at B. Build rows for wide models:
+' A -> B same rank, A --> B next row; flip the arrowhead (A <-- B), not the operands, to keep rows.
+' Enums: show them as attribute types; draw an enum box only when the diagram is about it.
+class Order {
+  +id: UUID
+  +status: OrderStatus
+  +items: List[OrderItem]
+  +total(): Money
+  +mark_paid()
+  +request_refund(items, reason): Refund
+}
+class OrderItem {
+  +id: UUID
+  +seat: Optional[Seat]
+  +price: Money
+}
+class Ticket {
+  +id: UUID
+  +barcode: str
+  +pdf_key: Optional[str]
+  +status: TicketStatus
+  +scan(by, device_id, at): Scan
+}
+class Payment {
+  +id: UUID
+  +provider_ref: str
+  +amount: Money
+  +status: PaymentStatus
+}
+class Refund {
+  +id: UUID
+  +amount: Money
+  +reason: str
+  +status: RefundStatus
+}
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAYMENT_FAILED
+  PAID
+  PARTIALLY_REFUNDED
+  REFUNDED
+  DISPUTED
+  EXPIRED
+}
+enum PaymentStatus {
+  AUTHORIZING
+  REQUIRES_ACTION
+  AUTHORIZED
+  CAPTURED
+  FAILED
+  REFUNDED
+}
+enum RefundStatus {
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  SUBMITTED
+  SUCCEEDED
+  FAILED
+}
+enum TicketStatus {
+  ISSUED
+  USED
+  VOID
+}
+
+Refund  "0..*" -> "1" Payment : payment
+Payment "0..*" -> "1" Order : order
+Order   "1" -> "0..*" OrderItem : items
+OrderItem "1" <- "0..1" Ticket : order_item
+Refund  "0..*" --> "1" Order : order
+Refund  --> RefundStatus
+Payment --> PaymentStatus
+Order   --> OrderStatus
+Ticket  --> TicketStatus
+@enduml

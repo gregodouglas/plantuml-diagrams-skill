@@ -1,0 +1,83 @@
+@startuml
+!include <awslib/AWSCommon>
+!include <awslib/NetworkingContentDelivery/CloudFront>
+!include <awslib/NetworkingContentDelivery/ElasticLoadBalancing>
+!include <awslib/NetworkingContentDelivery/VPCNATGateway>
+!include <awslib/Containers/Fargate>
+!include <awslib/Database/RDS>
+!include <awslib/Database/ElastiCache>
+!include <awslib/ApplicationIntegration/SimpleQueueService>
+!include <awslib/Storage/SimpleStorageService>
+!include <awslib/BusinessApplications/SimpleEmailService>
+' ---- house style (slide) ----
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam maxMessageSize 180
+skinparam wrapWidth 180
+<style>
+root {
+  FontName Helvetica
+  FontSize 14
+  FontColor #1F2937
+}
+element { BackgroundColor #F1F5F9; LineColor #475569; LineThickness 1.2; RoundCorner 6 }
+arrow   { LineColor #475569; LineThickness 1.2; FontSize 12; MaximumWidth 180 }
+note    { BackgroundColor #FFF7E0; LineColor #B45309; FontSize 12; MaximumWidth 220 }
+title   { FontSize 18; FontStyle bold }
+caption { FontSize 12; FontColor #64748B }
+legend  { FontSize 12; BackgroundColor white; LineColor #CBD5E1; MaximumWidth 320 }
+.accent { BackgroundColor #1D4ED8; FontColor white; LineColor #1E3A8A }
+.alert  { BackgroundColor #FEE2E2; FontColor #7F1D1D; LineColor #B91C1C }
+.muted  { BackgroundColor #F8FAFC; FontColor #64748B; LineColor #CBD5E1 }
+</style>
+hide stereotype
+' ---- layout (Graphviz dot) ----
+skinparam linetype polyline
+skinparam nodesep 50
+skinparam ranksep 60
+left to right direction
+
+' ---- body ----
+title Venue Ticketing: production VPC, two AZs
+
+rectangle "<$CloudFront,scale=0.5>\nCloudFront\n(edge, see request path)" as cf <<muted>>
+
+rectangle "VPC (AZ a + AZ b)" as vpc {
+  rectangle "Public subnets" as pub {
+    rectangle "<$ElasticLoadBalancing,scale=0.5>\nApplication\nLoad Balancer" as alb
+    rectangle "<$VPCNATGateway,scale=0.5>\nNAT gateways\none per AZ" as nat
+  }
+  rectangle "Private subnets" as priv {
+    rectangle "<$Fargate,scale=0.5>\napi service\nFargate, 2-6 tasks" as api
+    rectangle "<$Fargate,scale=0.5>\nworker service\nFargate, 1-4 tasks" as worker
+    rectangle "<$RDS,scale=0.5>\nRDS PostgreSQL 16\nprimary AZ a, standby AZ b" as rds
+    rectangle "<$ElastiCache,scale=0.5>\nElastiCache Redis\nprimary AZ a, replica AZ b" as redis
+  }
+}
+
+rectangle "<$SimpleQueueService,scale=0.5>\nSQS jobs\n+ jobs-dlq" as sqs
+rectangle "<$SimpleStorageService,scale=0.5>\nS3 tickets\nPDFs, SSE-KMS" as s3
+rectangle "<$SimpleEmailService,scale=0.5>\nAmazon SES" as ses
+
+rectangle "External" as ext {
+  [Identity provider\n(OIDC)] as idp
+  [Payment provider] as pay
+}
+
+cf --> pub : HTTPS
+alb --> api : route
+api --> rds : SQL
+api --> redis : seat holds
+worker --> rds : SQL
+api --> sqs : enqueue
+worker <-- sqs : consume
+worker --> s3 : PDFs
+worker --> ses : send email
+nat <-- api : outbound
+nat <-- worker : outbound
+nat --> ext : HTTPS
+
+legend bottom right
+  Grey box: shown elsewhere. Private subnets have no public IPs. Outbound calls leave through the NAT gateway of the same AZ.
+endlegend
+@enduml

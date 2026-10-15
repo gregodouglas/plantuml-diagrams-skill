@@ -1,0 +1,77 @@
+@startuml
+' ---- house style (slide) ----
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam maxMessageSize 180
+skinparam wrapWidth 180
+<style>
+root {
+  FontName Helvetica
+  FontSize 14
+  FontColor #1F2937
+  LineColor #475569
+  LineThickness 1.2
+}
+element { BackgroundColor #F1F5F9; LineColor #475569; RoundCorner 6 }
+arrow   { LineColor #475569; FontSize 12; MaximumWidth 180 }
+note    { BackgroundColor #FFF7E0; LineColor #B45309; FontSize 12; MaximumWidth 220 }
+document { title { FontSize 18; FontStyle bold; LineThickness 0 } }
+caption { FontSize 12; FontColor #64748B }
+legend  { FontSize 12; BackgroundColor white; LineColor #CBD5E1; MaximumWidth 320 }
+.accent { BackgroundColor #1D4ED8; FontColor white; LineColor #1E3A8A }
+.muted  { BackgroundColor #F8FAFC; FontColor #64748B; LineColor #CBD5E1 }
+</style>
+hide stereotype
+' ---- layout (Graphviz dot) ----
+skinparam linetype polyline
+skinparam nodesep 50
+skinparam ranksep 60
+top to bottom direction
+
+title Pipeline infrastructure: GitHub Actions to Kubernetes
+
+actor "Developer" as dev
+
+package "Source" {
+  [GitHub repo] as repo
+  [Webhook] as gh
+}
+package "GitHub Actions" as gha {
+  [PR checks\nlint, types, unit, e2e] as checks
+  [Security scans\naudit, secrets, SAST] as sec
+  [Build job] as build
+  artifact "App image\n(artifact)" as art
+}
+[Preview env\n(per PR)] as preview
+package "Staging" {
+  [Staging app] as staging
+  database "DB staging" as d1s
+}
+[Approval gate\n(GitHub env)] as gate <<accent>>
+package "Production" {
+  [Canary 10%] as canary
+  [Stable 100%] as prod
+  database "DB prod" as d1p
+}
+cloud "Chat #deploys" as chat
+
+dev     -> repo      : push branch
+repo    -> gh       : notify
+gh      -> gha      : trigger on PR
+checks  --> build   : on green
+sec     --> build   : on green
+build   -> art      : upload
+art     --> preview : deploy PR
+art     --> staging : deploy main
+staging -> d1s      : migrate
+staging -> gate     : request release
+gate    -> canary   : deploy
+gate    --> d1p     : migrate
+canary  -> prod     : promote
+gha     ..> chat    : notify
+
+legend bottom right
+  Blue = human approval gate
+  Dashed = async notification
+endlegend
+@enduml

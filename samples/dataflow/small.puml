@@ -1,0 +1,60 @@
+@startuml
+' ---- house style (slide) ----
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam maxMessageSize 180
+skinparam wrapWidth 180
+<style>
+root {
+  FontName Helvetica
+  FontSize 14
+  FontColor #1F2937
+  LineColor #475569
+  LineThickness 1.2
+}
+element { BackgroundColor #F1F5F9; LineColor #475569; RoundCorner 6 }
+arrow   { LineColor #475569; FontSize 12; MaximumWidth 180 }
+note    { BackgroundColor #FFF7E0; LineColor #B45309; FontSize 12; MaximumWidth 220 }
+document { title { FontSize 18; FontStyle bold; LineThickness 0 } }
+caption { FontSize 12; FontColor #64748B }
+legend  { FontSize 12; BackgroundColor white; LineColor #CBD5E1; MaximumWidth 320 }
+.accent { BackgroundColor #1D4ED8; FontColor white; LineColor #1E3A8A }
+.muted  { BackgroundColor #F8FAFC; FontColor #64748B; LineColor #CBD5E1 }
+</style>
+hide stereotype
+' ---- layout (Graphviz dot) ----
+skinparam linetype polyline
+skinparam nodesep 50
+skinparam ranksep 60
+left to right direction
+
+title Context DFD: courier platform
+
+rectangle "Public internet" as z_pub #white;line:94A3B8;line.dashed {
+  rectangle "Merchant\n(web shop)" as client
+  rectangle "Courier\n(mobile app)" as server
+}
+rectangle "App zone (cloud)" as z_app #white;line:94A3B8;line.dashed {
+  usecase "0\nParcel platform" as sys
+}
+rectangle "Data zone" as z_data #white;line:94A3B8;line.dashed {
+  database "Orders DB\n(Postgres)" as db
+  database "Documents\n(object store)" as docs
+}
+rectangle "Third party" as z_3p #white;line:94A3B8;line.dashed {
+  rectangle "Customs filing" as customs
+}
+
+client -[#D55E00,bold]-> sys : submit order (PII)
+sys    -[#D55E00,bold]-> server : assign job (PII)
+server -[#D55E00,bold]-> sys    : log attempt (PII)
+sys    -[#D55E00,bold]-> db     : write order (PII)
+sys    --> docs   : store proof
+sys    -[#D55E00,bold]-> customs  : file customs (PII)
+
+legend bottom right
+  Dashed box = trust boundary
+  <color:#D55E00><b>Orange bold</b></color> = flow carries PII
+  Ellipse = process, cylinder = data store
+endlegend
+@enduml

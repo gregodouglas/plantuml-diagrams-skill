@@ -1,0 +1,66 @@
+@startuml
+' ---- house style (print) ----
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam maxMessageSize 160
+skinparam wrapWidth 160
+' NOTE: title style moved under document { } - a top-level title { LineThickness 0 } strips node borders in SVG/PDF (see NOTES.md)
+<style>
+root {
+  FontName Helvetica
+  FontSize 12
+  FontColor #1F2937
+  LineColor #475569
+  LineThickness 1
+}
+element { BackgroundColor #F1F5F9; LineColor #475569; RoundCorner 6 }
+arrow   { LineColor #475569; FontSize 11; MaximumWidth 160 }
+note    { BackgroundColor #FFF7E0; LineColor #B45309; FontSize 11; MaximumWidth 200 }
+document { title { FontSize 15; FontStyle bold; LineThickness 0 } }
+caption { FontSize 11; FontColor #64748B }
+legend  { FontSize 11; BackgroundColor white; LineColor #CBD5E1; MaximumWidth 320 }
+.accent { BackgroundColor #1D4ED8; FontColor white; LineColor #1E3A8A }
+.muted  { BackgroundColor #F8FAFC; FontColor #64748B; LineColor #CBD5E1 }
+</style>
+hide stereotype
+' ---- layout (Graphviz dot) ----
+skinparam linetype polyline
+skinparam nodesep 50
+skinparam ranksep 60
+top to bottom direction
+
+title vSphere estate - two sites, overview
+
+' Takeaway: production runs at HQ on two clusters with dual LAN and FC fabrics;
+' both the array (LUN replication) and Veeam (VM replicas, backup copies)
+' push to the DR site over the WAN. Detail: large-compute, large-storage, large-dr.
+
+package "HQ site (primary)" as hq {
+  node "vCenter HQ" as vc1
+  node "Cluster PROD\n4 hosts" as prod
+  node "Cluster MGMT\n2 hosts" as mgmt
+  node "ToR switches\nA / B" as tor
+  node "FC fabric\nA / B" as fab
+  database "Array HQ\n4 datastores" as arr1
+  node "Veeam B&R" as veeam <<accent>>
+}
+cloud "WAN\n1 Gbps MPLS" as wan
+package "DR site" as dr {
+  node "vCenter DR" as vc2
+  node "Cluster DR\n2 hosts" as drc
+  database "Array DR" as arr2
+  node "Veeam repo\n(hardened)" as repo
+}
+
+vc1   --> prod : manages
+vc1   --> mgmt : manages
+prod  --> tor  : LAN uplinks
+prod  --> fab  : HBA A / B
+mgmt  --> tor  : LAN uplinks
+fab   --> arr1 : multipath
+veeam --> arr1 : SAN backup
+arr1  -> wan  : LUN replication
+veeam --> wan  : replicas, copies
+wan   -> dr   : to DR site
+vc2   --> drc  : manages
+@enduml

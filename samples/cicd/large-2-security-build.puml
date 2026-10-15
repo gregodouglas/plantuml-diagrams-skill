@@ -1,0 +1,60 @@
+@startuml
+' ---- house style (print) ----
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam maxMessageSize 160
+skinparam wrapWidth 160
+<style>
+root {
+  FontName Helvetica
+  FontSize 12
+  FontColor #1F2937
+  LineColor #475569
+  LineThickness 1
+}
+element { BackgroundColor #F1F5F9; LineColor #475569; RoundCorner 6 }
+arrow   { LineColor #475569; FontSize 11; MaximumWidth 160 }
+note    { BackgroundColor #FFF7E0; LineColor #B45309; FontSize 11; MaximumWidth 200 }
+document { title { FontSize 15; FontStyle bold; LineThickness 0 } }
+caption { FontSize 11; FontColor #64748B }
+legend  { FontSize 11; BackgroundColor white; LineColor #CBD5E1; MaximumWidth 320 }
+.accent { BackgroundColor #1D4ED8; FontColor white; LineColor #1E3A8A }
+.muted  { BackgroundColor #F8FAFC; FontColor #64748B; LineColor #CBD5E1 }
+activityDiagram {
+  activityBar { BackgroundColor #475569; LineColor #475569 }
+  activity { MaximumWidth 200 }
+  diamond  { FontSize 11 }
+  arrow    { FontSize 11 }
+}
+</style>
+hide stereotype
+
+title Stage 2: security scans, build, artifact
+skinparam conditionStyle diamond
+
+start
+:Stage 1 passed;
+fork
+  :Dependency audit\n(pnpm audit);
+fork again
+  :Secret scan\n(gitleaks);
+fork again
+  :SAST\n(Semgrep);
+end fork
+if (High or critical\nfinding?) then (no)
+  fork
+    :Build web app\n(Docker image);
+  fork again
+    :Build API image;
+  end fork
+  :Generate SBOM;
+  :Upload artifact\n(tagged with SHA);
+else (yes)
+  :Open security issue;
+  :Block merge; <<accent>>
+endif
+stop
+legend bottom right
+  Blue = blocking gate
+endlegend
+@enduml

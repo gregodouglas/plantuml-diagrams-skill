@@ -1,0 +1,67 @@
+@startuml
+' ---- house style (print) ----
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam maxMessageSize 160
+skinparam wrapWidth 160
+<style>
+root {
+  FontName Helvetica
+  FontSize 12
+  FontColor #1F2937
+  LineColor #475569
+  LineThickness 1
+}
+element { BackgroundColor #F1F5F9; LineColor #475569; RoundCorner 6 }
+arrow   { LineColor #475569; FontSize 11; MaximumWidth 160 }
+note    { BackgroundColor #FFF7E0; LineColor #B45309; FontSize 11; MaximumWidth 200 }
+document { title { FontSize 15; FontStyle bold; LineThickness 0 } }
+caption { FontSize 11; FontColor #64748B }
+legend  { FontSize 11; BackgroundColor white; LineColor #CBD5E1; MaximumWidth 320 }
+.accent { BackgroundColor #1D4ED8; FontColor white; LineColor #1E3A8A }
+.muted  { BackgroundColor #F8FAFC; FontColor #64748B; LineColor #CBD5E1 }
+</style>
+hide stereotype
+' ---- layout (Graphviz dot) ----
+skinparam linetype polyline
+skinparam nodesep 50
+skinparam ranksep 60
+top to bottom direction
+
+title Server VLAN detail
+
+node "Core stack\n(see switch fabric)" as core <<muted>>
+rectangle "VLAN 10 Servers  10.10.10.0/24" as v10 #F0FDF4 {
+  node "DC1\n.10" as dc1
+  node "DC2\n.11" as dc2
+  node "File server\n.20" as file
+  node "Print server\n.30" as prt
+  node "NPS / RADIUS\n.40" as nps
+}
+rectangle "Hypervisor cluster" as hvc #EFF6FF {
+  node "HV-1" as hv1 <<accent>>
+  node "HV-2" as hv2
+  node "HV-3" as hv3
+}
+rectangle "VLAN 11 Storage (non-routed)" as v11 #F8FAFC {
+  database "iSCSI SAN" as san
+}
+rectangle "VLAN 12 Backup" as v12 #F8FAFC {
+  node "Backup server" as bkp
+}
+
+core --> hvc  : 2x25G LACP
+core --> v10  : VM traffic
+hvc  --> v11  : iSCSI 3260
+bkp  --> hvc  : API 443
+dc1   -  dc2  : AD repl.
+dc1  -[hidden]-> file
+dc2  -[hidden]-> prt
+hv1  -[hidden]-> hv3
+v10  -[hidden]-> hvc
+
+legend right
+  All VLAN 10 servers are VMs on the hypervisor cluster.
+  VLAN 11 has no gateway; only hypervisors attach to it.
+endlegend
+@enduml

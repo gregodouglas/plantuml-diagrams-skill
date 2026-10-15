@@ -1,0 +1,25 @@
+# OS / editors
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+.vscode/
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Local agent-harness state (the skill itself is harness-neutral)
+.claude/
+.opencode/
+.agents/
+
+# Local-only material.
+# Private names the leak guard in tests/run.sh checks for (one ERE per line).
+tests/guard.local
+
+# Scratch renders: keep committed renders only under samples/*/out/ and examples/out/
+*.tmp
+/out/
+/tmp/

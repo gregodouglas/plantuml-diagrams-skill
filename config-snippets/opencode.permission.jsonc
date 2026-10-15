@@ -1,0 +1,14 @@
+// Merge into ~/.config/opencode/opencode.jsonc. Last matching rule wins, so the catch-all comes first.
+// Patterns must match the symlink path opencode reports (~/.claude/skills/plantuml-diagrams/...), not the resolved target.
+{
+  "$schema": "https://opencode.ai/config.json",
+  "permission": {
+    "skill": { "*": "allow" },
+    "bash": {
+      "*": "ask",
+      "plantuml *": "allow",
+      "*skills/plantuml-diagrams/scripts/*": "allow",
+      "python3 *skills/plantuml-diagrams/scripts/*": "allow"
+    }
+  }
+}

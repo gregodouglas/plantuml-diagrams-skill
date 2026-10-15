@@ -1,0 +1,64 @@
+@startuml
+' ---- house style (print) ----
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam maxMessageSize 160
+skinparam wrapWidth 160
+<style>
+root {
+  FontName Helvetica
+  FontSize 12
+  FontColor #1F2937
+}
+element { BackgroundColor #F1F5F9; LineColor #475569; LineThickness 1; RoundCorner 6 }
+arrow   { LineColor #475569; LineThickness 1; FontSize 11; MaximumWidth 160 }
+note    { BackgroundColor #FFF7E0; LineColor #B45309; FontSize 11; MaximumWidth 200 }
+title   { FontSize 15; FontStyle bold }
+caption { FontSize 11; FontColor #64748B }
+legend  { FontSize 11; BackgroundColor white; LineColor #CBD5E1; MaximumWidth 320 }
+.accent { BackgroundColor #1D4ED8; FontColor white; LineColor #1E3A8A }
+.alert  { BackgroundColor #FEE2E2; FontColor #7F1D1D; LineColor #B91C1C }
+.muted  { BackgroundColor #F8FAFC; FontColor #64748B; LineColor #CBD5E1 }
+sequenceDiagram {
+  participant { Margin 0 12 }
+  lifeLine    { LineColor #94A3B8 }
+  group       { FontSize 11 }
+}
+</style>
+hide stereotype
+
+' ---- body ----
+title Purchase to tickets: checkout, webhook, issuing
+hide footbox
+autonumber "<b>00"
+
+participant "Fan\nweb app"      as web
+participant "Ticketing\nAPI"    as api
+participant "Payment\nprovider" as pay
+queue       "Job\nqueue"        as q
+participant "Worker"            as w
+participant "Ticket\nstore"     as store
+participant "Email\nservice"    as mail
+
+ref over web, api : seat hold placed (see medium.puml)
+web -> api : POST /orders (hold id)
+api -> pay : authorize
+alt 3-D Secure
+  api --> web : 202 challenge URL
+  pay -> api : webhook payment.authorized
+  api -> q : enqueue job
+  api --> pay : 200
+  q -> w : process_webhook
+  w -> pay : capture
+  web -> api : poll GET /orders/{id}
+else authorized
+  api -> pay : capture
+  api --> web : 201 order
+end
+note over api, q : order paid; hold converted\nto order_items
+api -> q : enqueue issue_tickets
+q -> w : issue_tickets
+w -> store : render ticket PDFs
+w -> mail : send confirmation
+ref over web, mail : refund: see large-refund.puml. Door scan: see large-door.puml
+@enduml

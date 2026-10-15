@@ -1,0 +1,73 @@
+@startuml
+' ---- house style (print) ----
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam maxMessageSize 160
+skinparam wrapWidth 160
+' NOTE: title style moved under document { } - a top-level title { LineThickness 0 } strips node borders in SVG/PDF (see NOTES.md)
+<style>
+root {
+  FontName Helvetica
+  FontSize 12
+  FontColor #1F2937
+  LineColor #475569
+  LineThickness 1
+}
+element { BackgroundColor #F1F5F9; LineColor #475569; RoundCorner 6 }
+arrow   { LineColor #475569; FontSize 11; MaximumWidth 160 }
+note    { BackgroundColor #FFF7E0; LineColor #B45309; FontSize 11; MaximumWidth 200 }
+document { title { FontSize 15; FontStyle bold; LineThickness 0 } }
+caption { FontSize 11; FontColor #64748B }
+legend  { FontSize 11; BackgroundColor white; LineColor #CBD5E1; MaximumWidth 320 }
+.accent { BackgroundColor #1D4ED8; FontColor white; LineColor #1E3A8A }
+.muted  { BackgroundColor #F8FAFC; FontColor #64748B; LineColor #CBD5E1 }
+</style>
+hide stereotype
+' ---- layout (Graphviz dot) ----
+skinparam linetype polyline
+skinparam nodesep 50
+skinparam ranksep 60
+top to bottom direction
+
+title Kubernetes platform - cluster overview
+
+' Takeaway: one cluster, two app namespaces deployed by Argo CD from Git, all
+' state outside the pods (Longhorn CSI, managed Postgres, S3), platform tooling
+' isolated in ns platform. Detail: large-ns-prod, large-platform.
+
+cloud "Cloud LB" as lb
+cloud "Git repo" as git
+cloud "Let's Encrypt" as acme
+node "Kubernetes cluster\n3 control-plane, 4 workers" as k8s {
+  [Ingress controller] as ing
+  rectangle "ns: staging" as stg {
+    [web, api\n1 replica] as stgapps
+  }
+  rectangle "ns: prod" as prod {
+    [web, api, worker\n3 replicas] as prodapps
+  }
+  rectangle "ns: platform" as plat {
+    [Argo CD] as argo <<accent>>
+    [cert-manager] as cert
+    [Prometheus\n+ Grafana] as mon
+  }
+  [Longhorn CSI\n3-way replicas] as csi
+}
+database "Managed\nPostgreSQL" as db
+storage "Object storage\n(S3)" as s3
+
+lb       --> ing      : TCP 443
+ing      --> prod     : app.*
+ing      --> stg      : staging.*
+prod     --> csi      : PVCs
+stg      --> csi      : PVCs
+prod     --> db       : SQL over TLS
+stg      --> db       : SQL over TLS
+prod     --> s3       : objects
+argo     --> git      : pulls manifests
+argo     --> prod     : syncs
+argo     --> stg      : syncs
+cert     --> acme     : ACME DNS-01
+cert     --> ing      : TLS certs
+mon      --> prod     : scrapes
+@enduml

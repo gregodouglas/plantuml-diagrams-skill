@@ -1,0 +1,112 @@
+@startuml
+' ---- house style (print) ----
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam maxMessageSize 160
+skinparam wrapWidth 160
+<style>
+root {
+  FontName Helvetica
+  FontSize 12
+  FontColor #1F2937
+}
+element { BackgroundColor #F1F5F9; LineColor #475569; LineThickness 1; RoundCorner 6 }
+arrow   { LineColor #475569; LineThickness 1; FontSize 11; MaximumWidth 160 }
+note    { BackgroundColor #FFF7E0; LineColor #B45309; FontSize 11; MaximumWidth 200 }
+title   { FontSize 15; FontStyle bold }
+caption { FontSize 11; FontColor #64748B }
+legend  { FontSize 11; BackgroundColor white; LineColor #CBD5E1; MaximumWidth 320 }
+.accent { BackgroundColor #1D4ED8; FontColor white; LineColor #1E3A8A }
+.alert  { BackgroundColor #FEE2E2; FontColor #7F1D1D; LineColor #B91C1C }
+.muted  { BackgroundColor #F8FAFC; FontColor #64748B; LineColor #CBD5E1 }
+</style>
+hide stereotype
+' ---- layout (Graphviz dot) ----
+skinparam linetype polyline
+skinparam nodesep 50
+skinparam ranksep 60
+left to right direction
+
+' ---- body ----
+title Venue Ticketing: sales tables (ER)
+hide circle
+skinparam classAttributeIconSize 0
+' Columns: * = NOT NULL, no marker = nullable; tag keys <<PK>>, <<FK>>, <<UQ>> (one tag per column).
+' Crow's feet: ||--o{ one to zero-or-many, ||--|{ one to one-or-many, ||--o| one to zero-or-one,
+' |o--o{ zero-or-one to many (a nullable FK). One dash (||-o{) = same rank, two (||--o{) = next rank:
+' build rows. Two FKs to the same table: label both edges (users ||--o{ refunds : requested_by).
+' Edges are polyline (house style); switch to linetype ortho only when no edge carries a label.
+
+hide empty members
+entity "users" as users <<muted>>
+entity "events" as events <<muted>>
+entity "price_tiers" as price_tiers <<muted>>
+entity "seats" as seats <<muted>>
+entity "seat_holds" as seat_holds {
+  * id : uuid <<PK>>
+  --
+  * event_id : uuid <<FK>>
+  * user_id : uuid <<FK>>
+  * seat_ids : uuid[]
+  * expires_at : timestamptz
+}
+entity "orders" as orders {
+  * id : uuid <<PK>>
+  --
+  * user_id : uuid <<FK>>
+  * event_id : uuid <<FK>>
+    hold_id : uuid <<FK>>
+  * status : text
+  * total_cents : int
+  * currency : char(3)
+}
+entity "order_items" as order_items {
+  * id : uuid <<PK>>
+  --
+  * order_id : uuid <<FK>>
+  * price_tier_id : uuid <<FK>>
+    seat_id : uuid <<FK>>
+  * price_cents : int
+}
+entity "payments" as payments {
+  * id : uuid <<PK>>
+  --
+  * order_id : uuid <<FK>>
+  * provider_ref : text <<UQ>>
+  * status : text
+  * amount_cents : int
+}
+entity "refunds" as refunds {
+  * id : uuid <<PK>>
+  --
+  * order_id : uuid <<FK>>
+  * payment_id : uuid <<FK>>
+  * requested_by : uuid <<FK>>
+    reviewed_by : uuid <<FK>>
+  * status : text
+  * amount_cents : int
+    reason : text
+}
+entity "webhook_events" as webhook_events {
+  * provider_event_id : text <<PK>>
+  --
+  * type : text
+  * payload : jsonb
+  * received_at : timestamptz
+    processed_at : timestamptz
+}
+
+users       ||--o{ seat_holds
+events      ||--o{ seat_holds
+users       ||--o{ orders
+events      ||--o{ orders
+seat_holds  |o--o{ orders
+orders      ||--o{ order_items
+price_tiers ||--o{ order_items
+seats       |o--o{ order_items
+orders      ||--o{ payments
+orders      ||--o{ refunds
+payments    ||--o{ refunds
+users       ||--o{ refunds : requested_by
+users       |o--o{ refunds : reviewed_by
+@enduml

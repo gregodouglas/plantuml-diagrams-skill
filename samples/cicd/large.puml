@@ -1,0 +1,63 @@
+@startuml
+' ---- house style (print) ----
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam maxMessageSize 160
+skinparam wrapWidth 160
+<style>
+root {
+  FontName Helvetica
+  FontSize 12
+  FontColor #1F2937
+  LineColor #475569
+  LineThickness 1
+}
+element { BackgroundColor #F1F5F9; LineColor #475569; RoundCorner 6 }
+arrow   { LineColor #475569; FontSize 11; MaximumWidth 160 }
+note    { BackgroundColor #FFF7E0; LineColor #B45309; FontSize 11; MaximumWidth 200 }
+document { title { FontSize 15; FontStyle bold; LineThickness 0 } }
+caption { FontSize 11; FontColor #64748B }
+legend  { FontSize 11; BackgroundColor white; LineColor #CBD5E1; MaximumWidth 320 }
+.accent { BackgroundColor #1D4ED8; FontColor white; LineColor #1E3A8A }
+.muted  { BackgroundColor #F8FAFC; FontColor #64748B; LineColor #CBD5E1 }
+</style>
+hide stereotype
+' ---- layout (Graphviz dot) ----
+skinparam linetype polyline
+skinparam nodesep 50
+skinparam ranksep 60
+top to bottom direction
+
+title Release pipeline overview (detail: large-1 to large-4)
+
+[Git push / PR\n(GitHub)] as src
+
+package "CI: every push" as ci {
+  [1. PR checks\nNode 20/22 x 3 browsers] as checks
+  [2a. Security scans\naudit, secrets, SAST] as sec
+  [2b. Build + artifact\nSHA-tagged image] as build
+}
+package "CD: per environment" as cd {
+  [3a. Preview deploy\nPR only] as preview
+  [3b. Staging deploy\nDB migrate + smoke] as staging
+  [4a. Approval gate\nrequired reviewer] as gate <<accent>>
+  [4b. Production\ncanary, auto-rollback] as prod
+}
+cloud "Chat + GitHub status" as notify
+
+src     --> checks  : trigger
+src     --> sec     : trigger
+checks  --> build   : all green
+sec     --> build   : no high findings
+build   --> preview : if PR
+build   --> staging : if main
+staging -> gate     : request release
+gate    -> prod     : approve
+cd      ..> notify  : report status
+
+legend bottom right
+  Blue = human approval gate
+  Dashed = async notification
+  Numbers = detail diagram
+endlegend
+@enduml

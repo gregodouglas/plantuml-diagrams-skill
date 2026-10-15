@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(plantuml *)",
+      "Bash(*skills/plantuml-diagrams/scripts/*)"
+    ]
+  }
+}

@@ -1,0 +1,16 @@
+== examples/before.puml: WARN
+  lint  line  22  long-edge-label        edge/message label is 42 chars (> 40); shorten, add \n, or set a wrap width
+  lint  line  29  long-edge-label        edge/message label is 44 chars (> 40); shorten, add \n, or set a wrap width
+  DESCRIPTION 1918x728 ratio=2.635  target=1.778 err=+0.39  texts=29 nodes=12 edges=14 crossings=8 density=0.037 minfont@fit=13.0
+  info            aspect                     1918x728 ratio 2.63 vs target 1.78, but it fits the slot unscaled; acceptable
+  warn  line  30  edge-through-text          edge lnk24 runs through 'Data'
+  warn  line  33  edge-through-text          edge lnk27 runs through 'publish StockChanged events'
+  warn  line  33  edge-through-own-label     edge lnk27 runs through its own label 'publish PaymentSettled' (typical for same-rank -> edges and HA pair links); move the text into the node or a note
+  warn  line  23  label-on-border            label 'forwards traffic' lies on a container border; shorten it, lengthen the edge (--->), or move the text into the node
+  warn  line  31  label-on-border            label 'publish StockChanged events' lies on a container border; shorten it, lengthen the edge (--->), or move the text into the node
+  svg: examples/out/before.svg
+  png: examples/out/before.png (3835x1454)
+== examples/after.puml: OK
+  DESCRIPTION 1048x576 ratio=1.819  target=1.778 err=+0.02  texts=42 nodes=12 edges=14 crossings=3 density=0.053 minfont@fit=12.0
+  svg: examples/out/after.svg
+  png: examples/out/after.png (2094x1150)

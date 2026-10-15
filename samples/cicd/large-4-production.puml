@@ -1,0 +1,59 @@
+@startuml
+' ---- house style (print) ----
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam maxMessageSize 160
+skinparam wrapWidth 160
+<style>
+root {
+  FontName Helvetica
+  FontSize 12
+  FontColor #1F2937
+  LineColor #475569
+  LineThickness 1
+}
+element { BackgroundColor #F1F5F9; LineColor #475569; RoundCorner 6 }
+arrow   { LineColor #475569; FontSize 11; MaximumWidth 160 }
+note    { BackgroundColor #FFF7E0; LineColor #B45309; FontSize 11; MaximumWidth 200 }
+document { title { FontSize 15; FontStyle bold; LineThickness 0 } }
+caption { FontSize 11; FontColor #64748B }
+legend  { FontSize 11; BackgroundColor white; LineColor #CBD5E1; MaximumWidth 320 }
+.accent { BackgroundColor #1D4ED8; FontColor white; LineColor #1E3A8A }
+.muted  { BackgroundColor #F8FAFC; FontColor #64748B; LineColor #CBD5E1 }
+activityDiagram {
+  activityBar { BackgroundColor #475569; LineColor #475569 }
+  activity { MaximumWidth 200 }
+  diamond  { FontSize 11 }
+  arrow    { FontSize 11 }
+}
+</style>
+hide stereotype
+
+title Stage 4: approval gate and canary release
+skinparam conditionStyle diamond
+
+start
+:Approval gate\n(required reviewer); <<accent>>
+if (Approved\nwithin 24 h?) then (yes)
+  :Snapshot DB, apply\nprod migrations;
+  note left: expand/contract only:\nold and new code\nmust both work
+  :Deploy canary 10%\n(rolling);
+  repeat
+    :Watch errors + p95\n(10 min);
+    if (Healthy?) then (no)
+      :Roll back app + DB,\npage on-call;
+      stop
+    else (yes)
+      :Raise traffic\n(50%, then 100%);
+    endif
+  repeat while (Below 100%?\nyes: loop)
+  -> no;
+  :Tag release,\nnotify chat;
+else (no)
+  :Cancel release;
+endif
+stop
+legend bottom right
+  Blue = human approval gate
+endlegend
+@enduml

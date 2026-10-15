@@ -1,0 +1,55 @@
+@startuml
+!include <C4/C4_Context>
+' ---- house style (slide) ----
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam maxMessageSize 180
+skinparam wrapWidth 180
+<style>
+root {
+  FontName Helvetica
+  FontSize 14
+  FontColor #1F2937
+}
+element { BackgroundColor #F1F5F9; LineColor #475569; LineThickness 1.2; RoundCorner 6 }
+arrow   { LineColor #475569; LineThickness 1.2; FontSize 12; MaximumWidth 180 }
+note    { BackgroundColor #FFF7E0; LineColor #B45309; FontSize 12; MaximumWidth 220 }
+title   { FontSize 18; FontStyle bold }
+caption { FontSize 12; FontColor #64748B }
+legend  { FontSize 12; BackgroundColor white; LineColor #CBD5E1; MaximumWidth 320 }
+.accent { BackgroundColor #1D4ED8; FontColor white; LineColor #1E3A8A }
+.alert  { BackgroundColor #FEE2E2; FontColor #7F1D1D; LineColor #B91C1C }
+.muted  { BackgroundColor #F8FAFC; FontColor #64748B; LineColor #CBD5E1 }
+</style>
+hide stereotype
+' ---- layout (Graphviz dot) ----
+skinparam linetype polyline
+skinparam nodesep 50
+skinparam ranksep 170
+LAYOUT_LEFT_RIGHT()
+
+' ---- body ----
+title Venue Ticketing: system context
+
+AddElementTag("accent", $bgColor="#1D4ED8", $fontColor="#FFFFFF", $borderColor="#1E3A8A", $legendText="System in focus")
+
+Person(fan, "Fan", "Buys tickets, requests refunds")
+Person(staff, "Venue staff", "Creates events, runs box office, scans at the door")
+Person(admin, "Platform admin", "Onboards venues, handles disputes")
+
+System(vt, "Venue Ticketing", "Sells reserved and general-admission tickets", $tags="accent")
+
+System_Ext(idp, "Identity provider", "OIDC sign-in")
+System_Ext(pay, "Payment provider", "Card payments")
+System_Ext(email, "Email service", "Transactional email")
+
+Rel(fan, vt, "Buys tickets")
+Rel(staff, vt, "Manages events")
+Rel(admin, vt, "Onboards")
+Rel(vt, idp, "Signs in users")
+Rel(vt, pay, "Takes payments")
+Rel(pay, vt, "Sends webhooks")
+Rel(vt, email, "Sends email")
+
+SHOW_LEGEND()
+@enduml

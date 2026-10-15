@@ -1,0 +1,56 @@
+@startuml
+' ---- house style (print) ----
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam maxMessageSize 160
+skinparam wrapWidth 160
+<style>
+root {
+  FontName Helvetica
+  FontSize 12
+  FontColor #1F2937
+}
+element { BackgroundColor #F1F5F9; LineColor #475569; LineThickness 1; RoundCorner 6 }
+arrow   { LineColor #475569; LineThickness 1; FontSize 11; MaximumWidth 160 }
+note    { BackgroundColor #FFF7E0; LineColor #B45309; FontSize 11; MaximumWidth 200 }
+title   { FontSize 15; FontStyle bold }
+caption { FontSize 11; FontColor #64748B }
+legend  { FontSize 11; BackgroundColor white; LineColor #CBD5E1; MaximumWidth 320 }
+.accent { BackgroundColor #1D4ED8; FontColor white; LineColor #1E3A8A }
+.alert  { BackgroundColor #FEE2E2; FontColor #7F1D1D; LineColor #B91C1C }
+.muted  { BackgroundColor #F8FAFC; FontColor #64748B; LineColor #CBD5E1 }
+</style>
+hide stereotype
+' ---- layout (Graphviz dot) ----
+skinparam linetype polyline
+skinparam nodesep 50
+skinparam ranksep 60
+left to right direction
+
+' ---- body ----
+title Venue Ticketing on AWS: compute and data (production)
+
+[ECR\nimages] as ecr
+[Secrets Manager\nDB password, payment key,\nwebhook secret] as sm
+[api service\nFargate, 2-6 tasks\nautoscale CPU, requests] as api
+[worker service\nFargate, 1-4 tasks\nautoscale queue depth] as worker
+database "RDS PostgreSQL 16\nprimary AZ a\nstandby AZ b, backups 14 d" as rds
+database "ElastiCache Redis\nprimary AZ a, replica AZ b\nseat holds only" as redis
+queue "SQS jobs\n+ jobs-dlq after 5 receives" as sqs
+database "S3 tickets\nSSE-KMS, 24 h presigned URLs" as s3
+[Amazon SES] as ses
+[Application Load Balancer] as alb <<muted>>
+
+alb --> api : route
+ecr --> api : image
+ecr --> worker : image
+sm --> api : secrets
+sm --> worker : secrets
+api --> rds : SQL
+api --> redis : seat holds
+worker --> rds : SQL
+api --> sqs : enqueue
+worker <-- sqs : consume
+worker --> s3 : PDFs
+worker --> ses : send email
+@enduml

@@ -1,0 +1,67 @@
+@startuml
+' ---- house style (print) ----
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam maxMessageSize 160
+skinparam wrapWidth 160
+<style>
+root {
+  FontName Helvetica
+  FontSize 12
+  FontColor #1F2937
+  LineColor #475569
+  LineThickness 1
+}
+element { BackgroundColor #F1F5F9; LineColor #475569; RoundCorner 6 }
+arrow   { LineColor #475569; FontSize 11; MaximumWidth 160 }
+note    { BackgroundColor #FFF7E0; LineColor #B45309; FontSize 11; MaximumWidth 200 }
+document { title { FontSize 15; FontStyle bold; LineThickness 0 } }
+caption { FontSize 11; FontColor #64748B }
+legend  { FontSize 11; BackgroundColor white; LineColor #CBD5E1; MaximumWidth 320 }
+.accent { BackgroundColor #1D4ED8; FontColor white; LineColor #1E3A8A }
+.muted  { BackgroundColor #F8FAFC; FontColor #64748B; LineColor #CBD5E1 }
+</style>
+hide stereotype
+' ---- layout (Graphviz dot) ----
+skinparam linetype polyline
+skinparam nodesep 50
+skinparam ranksep 30
+left to right direction
+
+title Level 1: process 4 Proof of delivery
+
+rectangle "Public internet" as z_pub #white;line:94A3B8;line.dashed {
+  rectangle "Courier\n(mobile app)" as server
+}
+rectangle "App zone (cloud)" as z_app #white;line:94A3B8;line.dashed {
+  usecase "4.1\nAssemble\nfacts" as p41
+  usecase "4.2\nRender PDF" as p42
+  usecase "4.3\nCollect\ne-signature" as p43
+  usecase "4.4\nFile\ncustoms" as p44
+}
+rectangle "Data zone" as z_data #white;line:94A3B8;line.dashed {
+  database "Orders DB" as db
+  database "Documents\n(object store)" as docs
+  database "Audit log" as audit
+}
+rectangle "Third party" as z_3p #white;line:94A3B8;line.dashed {
+  rectangle "Customs filing" as customs
+}
+
+p41 <-[#D55E00,bold]- db : attempts, recipient\n(PII)
+p41 -[#D55E00,bold]-> p42 : proof facts\n(PII)
+p42 -[#D55E00,bold]-> docs : draft PDF\n(PII)
+p42 --> p43 : sign request
+server -[#D55E00,bold]-> p43 : signature\n(PII)
+p43 -[#D55E00,bold]-> p44 : signed PDF\n(PII)
+p44 -[#D55E00,bold]-> customs : file customs\n(PII)
+p44 <-- customs : filing receipt
+p44 --> db : filing status
+p44 ..> audit : customs.filed
+
+legend bottom right
+  Dashed box = trust boundary
+  <color:#D55E00><b>Orange bold</b></color> = flow carries PII
+  Dashed arrow = append-only write
+endlegend
+@enduml

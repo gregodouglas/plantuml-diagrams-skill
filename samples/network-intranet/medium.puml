@@ -1,0 +1,87 @@
+@startuml
+' ---- house style (slide) ----
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam maxMessageSize 180
+skinparam wrapWidth 180
+<style>
+root {
+  FontName Helvetica
+  FontSize 14
+  FontColor #1F2937
+  LineColor #475569
+  LineThickness 1.2
+}
+element { BackgroundColor #F1F5F9; LineColor #475569; RoundCorner 6 }
+arrow   { LineColor #475569; FontSize 12; MaximumWidth 180 }
+note    { BackgroundColor #FFF7E0; LineColor #B45309; FontSize 12; MaximumWidth 220 }
+document { title { FontSize 18; FontStyle bold; LineThickness 0 } }
+caption { FontSize 12; FontColor #64748B }
+legend  { FontSize 12; BackgroundColor white; LineColor #CBD5E1; MaximumWidth 320 }
+.accent { BackgroundColor #1D4ED8; FontColor white; LineColor #1E3A8A }
+.muted  { BackgroundColor #F8FAFC; FontColor #64748B; LineColor #CBD5E1 }
+</style>
+hide stereotype
+' ---- layout (Graphviz dot) ----
+skinparam linetype polyline
+skinparam nodesep 50
+skinparam ranksep 60
+left to right direction
+
+title Office LAN VLANs (medium)
+
+node "Firewall\ninter-VLAN routing" as fw <<accent>>
+rectangle "Core stack" as cs {
+  node "Core SW2" as c2
+  node "Core SW1" as c1
+}
+node "Access SW\nfloor 1" as a1
+node "Access SW\nfloor 2" as a2
+node "Wi-Fi APs x6" as aps
+
+rectangle "VLAN 10 Servers  10.10.10.0/24" as v10 #F0FDF4 {
+  node "DC / DNS" as dc
+  node "File" as file
+  node "Print server" as ps
+  node "Hypervisor" as hv
+}
+rectangle "VLAN 20 Workstations\n10.10.20.0/24" as v20 #EFF6FF {
+  node "Desktops,\ncorp Wi-Fi" as ws
+}
+rectangle "VLAN 30 VoIP\n10.10.30.0/24" as v30 #EFF6FF {
+  node "IP phones" as ph
+}
+rectangle "VLAN 40 Printers\n10.10.40.0/24" as v40 #FFF7ED {
+  node "MFPs" as prn
+}
+rectangle "VLAN 50 Guest\n192.168.50.0/24" as v50 #FEF2F2 {
+  node "Guest clients" as gst
+}
+rectangle "VLAN 99 Mgmt\n10.10.99.0/24" as v99 #F5F3FF {
+  node "WLC" as wlc
+  node "NMS / jump" as nms
+}
+
+fw  --> cs  : LACP trunk, all
+c2   -  c1
+cs  --> v10 : 10G access
+cs  --> a1  : trunk 20,30,99
+cs  --> a2  : trunk 20,40,50,99
+cs  --> v99
+a1  --> v20
+a1  --> v30
+a2  --> v40
+a2  --> aps : PoE trunk
+aps --> ws  : SSID corp
+aps --> v50 : SSID guest
+
+legend right
+  |= From |= To |= Allowed |
+  | 20 Workstations | 10 Servers | AD, DNS, SMB, IPP |
+  | 30 VoIP | internet | SIP TLS, RTP |
+  | 10 Print server | 40 Printers | IPP 631, SNMP |
+  | 50 Guest | internet | HTTP/S only |
+  | 99 Mgmt | all | SSH, HTTPS, SNMP |
+  All other inter-VLAN traffic: deny + log.
+endlegend
+@enduml

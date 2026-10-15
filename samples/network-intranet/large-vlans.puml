@@ -1,0 +1,54 @@
+@startuml
+' ---- house style (print) ----
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam maxMessageSize 160
+skinparam wrapWidth 160
+<style>
+root {
+  FontName Helvetica
+  FontSize 12
+  FontColor #1F2937
+  LineColor #475569
+  LineThickness 1
+}
+element { BackgroundColor #F1F5F9; LineColor #475569; RoundCorner 6 }
+arrow   { LineColor #475569; FontSize 11; MaximumWidth 160 }
+note    { BackgroundColor #FFF7E0; LineColor #B45309; FontSize 11; MaximumWidth 200 }
+document { title { FontSize 15; FontStyle bold; LineThickness 0 } }
+caption { FontSize 11; FontColor #64748B }
+legend  { FontSize 11; BackgroundColor white; LineColor #CBD5E1; MaximumWidth 320 }
+.accent { BackgroundColor #1D4ED8; FontColor white; LineColor #1E3A8A }
+.muted  { BackgroundColor #F8FAFC; FontColor #64748B; LineColor #CBD5E1 }
+</style>
+hide stereotype
+' ---- layout (Graphviz dot) ----
+skinparam linetype polyline
+skinparam nodesep 50
+skinparam ranksep 60
+left to right direction
+
+title VLAN routing and firewall rules
+
+cloud "Internet" as inet
+node "VLAN 20 Workstations\n10.10.20.0/23" as v20 #EFF6FF
+node "VLAN 30 VoIP\n10.10.30.0/24" as v30 #EFF6FF
+node "VLAN 50 Guest\n192.168.50.0/23" as v50 #FEF2F2
+node "VLAN 99 Mgmt\n10.10.99.0/24" as v99 #F5F3FF
+node "VLAN 10 Servers\n10.10.10.0/24" as v10 #F0FDF4
+node "VLAN 40 Printers\n10.10.40.0/24" as v40 #FFF7ED
+cloud "Hosted PBX" as pbx
+
+v20 --> v10  : AD, DNS, SMB, IPP
+v20 --> inet : HTTPS via proxy
+v30 --> pbx  : SIP TLS, RTP
+v50 --> inet : HTTP/S only
+v99 --> v10  : RDP, SSH, HTTPS
+v99 --> v40  : SNMP, HTTPS
+v10 --> v40  : IPP 631
+
+legend right
+  Every arrow is one allow rule on the firewall (gateway .1 per VLAN).
+  Anything not drawn is denied and logged. Guest cannot reach any 10.x VLAN.
+endlegend
+@enduml

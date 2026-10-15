@@ -1,0 +1,71 @@
+@startuml
+' ---- house style (print) ----
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam maxMessageSize 160
+skinparam wrapWidth 160
+<style>
+root {
+  FontName Helvetica
+  FontSize 12
+  FontColor #1F2937
+  LineColor #475569
+  LineThickness 1
+}
+element { BackgroundColor #F1F5F9; LineColor #475569; RoundCorner 6 }
+arrow   { LineColor #475569; FontSize 11; MaximumWidth 160 }
+note    { BackgroundColor #FFF7E0; LineColor #B45309; FontSize 11; MaximumWidth 200 }
+document { title { FontSize 15; FontStyle bold; LineThickness 0 } }
+actor   { LineThickness 1 }
+caption { FontSize 11; FontColor #64748B }
+legend  { FontSize 11; BackgroundColor white; LineColor #CBD5E1; MaximumWidth 320 }
+.accent { BackgroundColor #1D4ED8; FontColor white; LineColor #1E3A8A }
+.muted  { BackgroundColor #F8FAFC; FontColor #64748B; LineColor #CBD5E1 }
+</style>
+hide stereotype
+' ---- layout (Graphviz dot) ----
+skinparam linetype polyline
+skinparam nodesep 50
+skinparam ranksep 60
+top to bottom direction
+
+title Cloud connectivity detail
+
+node "HQ edge FW pair\n(see HQ perimeter)" as hqfw <<muted>>
+node "ExpressRoute\n1 Gb circuit" as er
+node "VPN gateway\n(backup)" as vpngw
+
+  rectangle "Azure hub VNet  10.100.0.0/22" as hub #EFF6FF {
+    node "Azure Firewall" as azfw <<accent>>
+    node "Azure Bastion" as bastion
+  }
+  rectangle "Spoke: prod  10.101.0.0/22" as prod #F0FDF4 {
+    node "App VMs" as vm
+  }
+  rectangle "Spoke: AVD  10.102.0.0/22" as avdz #F0FDF4 {
+    node "AVD session hosts" as avd
+  }
+node "Microsoft Sentinel" as sentinel
+cloud "Microsoft 365" as m365s {
+  node "Entra ID" as entra
+  node "Exchange / SharePoint" as m365
+}
+
+hqfw  --> er       : private peering
+hqfw  --> vpngw    : IPsec S2S
+er    --> hub      : BGP routes
+vpngw --> hub
+azfw  --> prod     : VNet peering
+azfw  --> avdz     : VNet peering
+bastion --> prod   : RDP/SSH 443
+azfw  --> sentinel : diagnostic logs
+hqfw  --> m365     : HTTPS 443
+avd   --> entra    : Entra join
+
+legend right
+  |= Fill |= Zone |
+  |<#EFF6FF>   | hub: shared services |
+  |<#F0FDF4>   | spoke: workload |
+  |<#1D4ED8>   | cloud enforcement |
+endlegend
+@enduml

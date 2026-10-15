@@ -1,0 +1,73 @@
+@startuml
+' ---- house style (print) ----
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam maxMessageSize 160
+skinparam wrapWidth 160
+<style>
+root {
+  FontName Helvetica
+  FontSize 12
+  FontColor #1F2937
+  LineColor #475569
+  LineThickness 1
+}
+element { BackgroundColor #F1F5F9; LineColor #475569; RoundCorner 6 }
+arrow   { LineColor #475569; FontSize 11; MaximumWidth 160 }
+note    { BackgroundColor #FFF7E0; LineColor #B45309; FontSize 11; MaximumWidth 200 }
+document { title { FontSize 15; FontStyle bold; LineThickness 0 } }
+caption { FontSize 11; FontColor #64748B }
+legend  { FontSize 11; BackgroundColor white; LineColor #CBD5E1; MaximumWidth 320 }
+.accent { BackgroundColor #1D4ED8; FontColor white; LineColor #1E3A8A }
+.muted  { BackgroundColor #F8FAFC; FontColor #64748B; LineColor #CBD5E1 }
+</style>
+hide stereotype
+' ---- layout (Graphviz dot) ----
+skinparam linetype polyline
+skinparam nodesep 50
+skinparam ranksep 60
+top to bottom direction
+
+title Campus LAN overview
+
+cloud "Internet" as inet
+rectangle "Data center / MDF" as dcr {
+  node "Firewall HA pair\ninter-VLAN routing" as fw <<accent>>
+  node "Core stack\n2x L3, 10G" as core
+  node "Servers VLAN 10\nDC, file, print, HV" as srv #F0FDF4
+  node "Mgmt VLAN 99\nNMS, jump, WLC" as mgmt #F5F3FF
+}
+rectangle "Building A" as ba {
+  node "Bldg A\ndistribution pair" as da
+  node "Bldg A access\n4 switches" as aa
+  node "Bldg A APs x12" as apa
+}
+rectangle "Building B" as bb {
+  node "Bldg B\ndistribution pair" as db
+  node "Bldg B access\n3 switches" as ab
+  node "Bldg B APs x8" as apb
+}
+
+inet -> fw    : dual ISP
+fw   --> core : LACP 2x10G
+core --> srv  : 10G access
+core --> mgmt
+core --> da   : MLAG 2x10G
+core --> db   : MLAG 2x10G
+da   --> aa   : 2x10G uplinks
+db   --> ab   : 2x10G uplinks
+aa   --> apa  : PoE+ trunk
+ab   --> apb  : PoE+ trunk
+
+legend right
+  |= VLAN |= Use |= Subnet |
+  | 10 | Servers | 10.10.10.0/24 |
+  | 20 | Workstations | 10.10.20.0/23 |
+  | 30 | VoIP | 10.10.30.0/24 |
+  | 40 | Printers | 10.10.40.0/24 |
+  | 50 | Guest Wi-Fi | 192.168.50.0/23 |
+  | 99 | Management | 10.10.99.0/24 |
+  Access trunks carry 20, 30, 40, 50, 99.
+  Detail: large-switching, -vlans, -wireless, -servers.
+endlegend
+@enduml

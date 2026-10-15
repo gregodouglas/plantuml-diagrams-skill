@@ -1,0 +1,62 @@
+@startuml
+' ---- house style (print) ----
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam maxMessageSize 160
+skinparam wrapWidth 160
+<style>
+root {
+  FontName Helvetica
+  FontSize 12
+  FontColor #1F2937
+  LineColor #475569
+  LineThickness 1
+}
+element { BackgroundColor #F1F5F9; LineColor #475569; RoundCorner 6 }
+arrow   { LineColor #475569; FontSize 11; MaximumWidth 160 }
+note    { BackgroundColor #FFF7E0; LineColor #B45309; FontSize 11; MaximumWidth 200 }
+document { title { FontSize 15; FontStyle bold; LineThickness 0 } }
+caption { FontSize 11; FontColor #64748B }
+legend  { FontSize 11; BackgroundColor white; LineColor #CBD5E1; MaximumWidth 320 }
+.accent { BackgroundColor #1D4ED8; FontColor white; LineColor #1E3A8A }
+.muted  { BackgroundColor #F8FAFC; FontColor #64748B; LineColor #CBD5E1 }
+</style>
+hide stereotype
+' ---- layout (Graphviz dot) ----
+skinparam linetype polyline
+skinparam nodesep 50
+skinparam ranksep 60
+top to bottom direction
+
+title Level 1: process 3 Delivery attempts
+
+rectangle "Public internet" as z_pub #white;line:94A3B8;line.dashed {
+  rectangle "Courier\n(mobile app)" as server
+  rectangle "Merchant\n(web shop)" as client
+}
+rectangle "App zone (cloud)" as z_app #white;line:94A3B8;line.dashed {
+  usecase "3.1\nReceive\nattempt" as p31
+  usecase "3.2\nVerify GPS\n+ time" as p32
+  usecase "3.3\nRecord\nattempt" as p33
+}
+rectangle "Data zone" as z_data #white;line:94A3B8;line.dashed {
+  database "Documents\n(object store)" as docs
+  database "Orders DB" as db
+  database "Audit log" as audit
+}
+
+server -[#D55E00,bold]-> p31 : notes, GPS, photos\n(PII)
+p31 -[#D55E00,bold]-> docs : store photos\n(PII)
+p31 -[#D55E00,bold]> p32 : GPS + timestamp\n(PII)
+p32 <-- db : job address
+p32 -> p33 : verified flag
+p33 -[#D55E00,bold]-> db : append attempt\n(PII)
+p33 ..> audit : attempt.logged
+client <-- p33 : status update
+
+legend bottom right
+  Dashed box = trust boundary
+  <color:#D55E00><b>Orange bold</b></color> = flow carries PII
+  Dashed arrow = append-only write
+endlegend
+@enduml

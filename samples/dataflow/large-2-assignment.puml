@@ -1,0 +1,63 @@
+@startuml
+' ---- house style (print) ----
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam maxMessageSize 160
+skinparam wrapWidth 160
+<style>
+root {
+  FontName Helvetica
+  FontSize 12
+  FontColor #1F2937
+  LineColor #475569
+  LineThickness 1
+}
+element { BackgroundColor #F1F5F9; LineColor #475569; RoundCorner 6 }
+arrow   { LineColor #475569; FontSize 11; MaximumWidth 160 }
+note    { BackgroundColor #FFF7E0; LineColor #B45309; FontSize 11; MaximumWidth 200 }
+document { title { FontSize 15; FontStyle bold; LineThickness 0 } }
+caption { FontSize 11; FontColor #64748B }
+legend  { FontSize 11; BackgroundColor white; LineColor #CBD5E1; MaximumWidth 320 }
+.accent { BackgroundColor #1D4ED8; FontColor white; LineColor #1E3A8A }
+.muted  { BackgroundColor #F8FAFC; FontColor #64748B; LineColor #CBD5E1 }
+</style>
+hide stereotype
+' ---- layout (Graphviz dot) ----
+skinparam linetype polyline
+skinparam nodesep 50
+skinparam ranksep 60
+left to right direction
+
+title Level 1: process 2 Courier assignment
+
+rectangle "Public internet" as z_pub #white;line:94A3B8;line.dashed {
+  rectangle "Courier\n(mobile app)" as server
+}
+rectangle "App zone (cloud)" as z_app #white;line:94A3B8;line.dashed {
+  usecase "2.1\nGeocode\naddress" as p21
+  usecase "2.2\nMatch courier" as p22
+  usecase "2.3\nDispatch job" as p23
+}
+rectangle "Data zone" as z_data #white;line:94A3B8;line.dashed {
+  database "Orders DB" as db
+  database "Audit log" as audit
+}
+rectangle "Third party" as z_3p #white;line:94A3B8;line.dashed {
+  rectangle "Geocoding API" as geo
+}
+
+p21 <-[#D55E00,bold]- db : open job address (PII)
+p21 -[#D55E00,bold]-> geo : address (PII)
+p21 --> p22 : lat/long
+p22 <-- db : courier roster
+p22 --> p23 : chosen courier
+p23 -[#D55E00,bold]-> db : write assignment
+server <-[#D55E00,bold]- p23 : job packet (PII)
+p23 ..> audit : job.assigned
+
+legend bottom right
+  Dashed box = trust boundary
+  <color:#D55E00><b>Orange bold</b></color> = flow carries PII
+  Dashed arrow = append-only write
+endlegend
+@enduml

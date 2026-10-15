@@ -1,0 +1,68 @@
+@startuml
+' ---- house style (print) ----
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam maxMessageSize 160
+skinparam wrapWidth 160
+<style>
+root {
+  FontName Helvetica
+  FontSize 12
+  FontColor #1F2937
+  LineColor #475569
+  LineThickness 1
+}
+element { BackgroundColor #F1F5F9; LineColor #475569; RoundCorner 6 }
+arrow   { LineColor #475569; FontSize 11; MaximumWidth 160 }
+note    { BackgroundColor #FFF7E0; LineColor #B45309; FontSize 11; MaximumWidth 200 }
+document { title { FontSize 15; FontStyle bold; LineThickness 0 } }
+actor   { LineThickness 1 }
+caption { FontSize 11; FontColor #64748B }
+legend  { FontSize 11; BackgroundColor white; LineColor #CBD5E1; MaximumWidth 320 }
+.accent { BackgroundColor #1D4ED8; FontColor white; LineColor #1E3A8A }
+.muted  { BackgroundColor #F8FAFC; FontColor #64748B; LineColor #CBD5E1 }
+</style>
+hide stereotype
+' ---- layout (Graphviz dot) ----
+skinparam linetype polyline
+skinparam nodesep 50
+skinparam ranksep 60
+top to bottom direction
+
+title HQ perimeter detail
+
+actor "Remote users" as remote
+cloud "Internet" as inet
+
+rectangle "Edge firewall pair\nHA active / standby" as fwpair #EFF6FF {
+  node "FW-A\nactive" as fwa <<accent>>
+  node "FW-B\nstandby" as fwb
+}
+rectangle "DMZ  172.16.10.0/24" as dmz #FFF7ED {
+  node "WAF /\nreverse proxy :443" as waf
+  node "Public web\n.20" as web
+  node "Mail relay\n.30 :25" as mail
+  node "VPN concentrator\n.40 :443" as vpn
+}
+node "Core + internal FW\n(see HQ internal)" as core <<muted>>
+node "SIEM\n(see HQ internal)" as siem <<muted>>
+cloud "Exchange Online" as exo
+
+remote --> inet   : SSL VPN 443
+inet   --> fwpair : ISP A 1 Gb
+inet   --> fwpair : ISP B 200 Mb
+fwa     -  fwb
+fwpair --> dmz    : HTTPS 443, SMTP 25
+waf    --> web    : HTTP 8080
+mail   --> exo    : SMTP TLS
+vpn    --> core   : RDP 3389
+fwpair --> core   : inside transit
+fwpair --> siem   : syslog 514
+
+legend right
+  |= Fill |= Zone |
+  |<#FFF7ED>   | DMZ: internet-facing |
+  |<#1D4ED8>   | active firewall |
+  |<#F8FAFC>   | shown in another diagram |
+endlegend
+@enduml

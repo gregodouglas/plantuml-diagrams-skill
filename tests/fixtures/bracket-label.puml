@@ -1,0 +1,10 @@
+@startuml
+' brackets typed after alt/else are link syntax; PlantUML adds the brackets itself
+participant "Web" as web
+participant "API" as api
+alt [seat held]
+  web -> api : pay
+else declined
+  api --> web : 402
+end
+@enduml

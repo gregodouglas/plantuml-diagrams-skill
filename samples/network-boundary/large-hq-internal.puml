@@ -1,0 +1,85 @@
+@startuml
+' ---- house style (print) ----
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam maxMessageSize 160
+skinparam wrapWidth 160
+<style>
+root {
+  FontName Helvetica
+  FontSize 12
+  FontColor #1F2937
+  LineColor #475569
+  LineThickness 1
+}
+element { BackgroundColor #F1F5F9; LineColor #475569; RoundCorner 6 }
+arrow   { LineColor #475569; FontSize 11; MaximumWidth 160 }
+note    { BackgroundColor #FFF7E0; LineColor #B45309; FontSize 11; MaximumWidth 200 }
+document { title { FontSize 15; FontStyle bold; LineThickness 0 } }
+actor   { LineThickness 1 }
+caption { FontSize 11; FontColor #64748B }
+legend  { FontSize 11; BackgroundColor white; LineColor #CBD5E1; MaximumWidth 320 }
+.accent { BackgroundColor #1D4ED8; FontColor white; LineColor #1E3A8A }
+.muted  { BackgroundColor #F8FAFC; FontColor #64748B; LineColor #CBD5E1 }
+</style>
+hide stereotype
+' ---- layout (Graphviz dot) ----
+skinparam linetype polyline
+skinparam nodesep 50
+skinparam ranksep 60
+top to bottom direction
+
+title HQ internal segmentation detail
+
+node "Edge FW pair\n(see HQ perimeter)" as edge <<muted>>
+node "Core L3 stack +\ninternal FW" as corefw <<accent>>
+
+rectangle "Servers  10.10.10.0/24" as srv #F0FDF4 {
+  node "AD DS / DNS" as dc
+  node "File server" as file
+  node "App server" as app
+}
+rectangle "Users  10.10.20.0/24" as usr #F0FDF4 {
+  node "Workstations" as ws
+}
+rectangle "Mgmt  10.10.99.0/24" as mgmt #F5F3FF {
+  node "Jump host\n(PAW)" as jump
+  node "SIEM /\nlog collector" as siem
+}
+rectangle "OT / ICS  10.50.0.0/24" as ot #FEFCE8 {
+  node "OT firewall" as otfw
+  node "HMI / SCADA" as hmi
+  node "PLCs" as plc
+}
+rectangle "IoT  10.60.0.0/24" as iot #FEFCE8 {
+  node "IP cameras" as cams
+  node "NVR" as nvr
+}
+node "Guest SSID\n192.168.100.0/24" as guest #FEF2F2
+
+edge   --> corefw : inside transit
+edge   --> guest  : internet only
+corefw --> srv    : AD, DNS, SMB 445
+corefw --> usr    : established only
+corefw --> mgmt   : syslog 514
+corefw --> ot     : jump HTTPS
+otfw   --> hmi    : allow-list
+hmi    --> plc    : Modbus 502
+corefw --> iot    : NVR only
+cams   --> nvr    : RTSP 554
+srv    -[hidden]-> ot
+usr    -[hidden]-> iot
+dc     -[hidden]-> file
+file   -[hidden]-> app
+jump   -[hidden]-> siem
+
+legend right
+  |= Fill |= Trust level |
+  |<#FEF2F2>   | untrusted (guest) |
+  |<#F0FDF4>   | internal: trusted |
+  |<#F5F3FF>   | management: restricted |
+  |<#FEFCE8>   | OT / IoT: isolated |
+  |<#1D4ED8>   | segmentation point |
+  Edge labels = what the FW allows into the zone.
+endlegend
+@enduml

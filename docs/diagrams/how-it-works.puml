@@ -1,0 +1,63 @@
+@startuml
+' ---- house style (slide) ----
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam maxMessageSize 180
+skinparam wrapWidth 180
+<style>
+root {
+  FontName Helvetica
+  FontSize 14
+  FontColor #1F2937
+}
+element { BackgroundColor #F1F5F9; LineColor #475569; LineThickness 1.2; RoundCorner 6 }
+arrow   { LineColor #475569; LineThickness 1.2; FontSize 12; MaximumWidth 180 }
+note    { BackgroundColor #FFF7E0; LineColor #B45309; FontSize 12; MaximumWidth 220 }
+title   { FontSize 18; FontStyle bold }
+caption { FontSize 12; FontColor #64748B }
+legend  { FontSize 12; BackgroundColor white; LineColor #CBD5E1; MaximumWidth 320 }
+.accent { BackgroundColor #1D4ED8; FontColor white; LineColor #1E3A8A }
+.alert  { BackgroundColor #FEE2E2; FontColor #7F1D1D; LineColor #B91C1C }
+.muted  { BackgroundColor #F8FAFC; FontColor #64748B; LineColor #CBD5E1 }
+sequenceDiagram {
+  participant { Margin 0 12 }
+  lifeLine    { LineColor #94A3B8 }
+  group       { FontSize 12 }
+}
+</style>
+hide stereotype
+
+' ---- body ----
+' README "How it works": the render-measure-fix loop. Every step is what the scripts actually do.
+hide footbox
+autonumber "<b>00"
+
+actor       "You"         as user
+participant "Agent"       as agent
+participant "puml-new"    as new
+participant "puml-check"  as check <<accent>>
+participant "PlantUML"    as puml
+participant "puml-render" as render
+
+user   -> agent    : ask for a diagram
+agent  -> new      : scaffold a template
+new   --> agent    : .puml with house style
+loop 3 rounds max
+  agent  -> check ++ : check --target 16:9
+  check  -> puml     : render SVG
+  puml  --> check    : SVG or syntax error
+  check  -> check    : measure text and edges
+  check --> agent -- : issues by source line
+  agent  -> agent    : fix one issue kind
+end
+agent  -> agent    : look at the PNG
+agent  -> render   : export (slide preset)
+render -> puml     : render SVG + 2x PNG
+render --> agent   : files, exit 0
+agent --> user     : diagram + report
+
+legend right
+<color:#1D4ED8><b>puml-check</b></color> measures the rendered SVG,
+so layout defects come back with line numbers
+endlegend
+@enduml

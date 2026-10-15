@@ -1,0 +1,79 @@
+@startuml
+' ---- house style (slide) ----
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam maxMessageSize 180
+skinparam wrapWidth 180
+' NOTE: title style moved under document { } - a top-level title { LineThickness 0 } strips node borders in SVG/PDF (see NOTES.md)
+<style>
+root {
+  FontName Helvetica
+  FontSize 14
+  FontColor #1F2937
+  LineColor #475569
+  LineThickness 1.2
+}
+element { BackgroundColor #F1F5F9; LineColor #475569; RoundCorner 6 }
+arrow   { LineColor #475569; FontSize 12; MaximumWidth 180 }
+note    { BackgroundColor #FFF7E0; LineColor #B45309; FontSize 12; MaximumWidth 220 }
+document { title { FontSize 18; FontStyle bold; LineThickness 0 } }
+caption { FontSize 12; FontColor #64748B }
+legend  { FontSize 12; BackgroundColor white; LineColor #CBD5E1; MaximumWidth 320 }
+.accent { BackgroundColor #1D4ED8; FontColor white; LineColor #1E3A8A }
+.muted  { BackgroundColor #F8FAFC; FontColor #64748B; LineColor #CBD5E1 }
+</style>
+hide stereotype
+!include <kubernetes/k8s-sprites-unlabeled-25pct>
+' ---- layout (Graphviz dot) ----
+skinparam linetype polyline
+skinparam nodesep 50
+skinparam ranksep 60
+left to right direction
+
+title Kubernetes platform - namespaces, GitOps, data services (k8s icons)
+
+' Takeaway: Argo CD deploys both app namespaces from Git; prod keeps state
+' outside the pods (CSI volume, managed DB, object storage); platform services
+' (certs, metrics) sit in their own namespace.
+
+cloud "Cloud LB" as lb
+cloud "Git repo" as git
+node "Kubernetes cluster" as k8s {
+  [<$ing,scale=0.5,color=#326CE5>\nIngress controller] as ing
+  rectangle "ns: prod" as prod {
+    [<$svc,scale=0.5,color=#326CE5>\nService web] as svc
+    [<$deploy,scale=0.5,color=#326CE5>\nDeployment web] as web
+    [<$deploy,scale=0.5,color=#326CE5>\nDeployment api] as api
+    storage "<$pvc,scale=0.5,color=#326CE5>\nPVC uploads" as pvc
+    [<$cm,scale=0.5,color=#326CE5> <$secret,scale=0.5,color=#326CE5>\nConfigMap +\nSecret] as cfg
+  }
+  rectangle "ns: staging" as stg {
+    [<$deploy,scale=0.5,color=#326CE5>\nweb + api\n1 replica each] as stgapps
+  }
+  rectangle "ns: platform" as plat {
+    [Argo CD] as argo <<accent>>
+    [cert-manager] as cert
+    [Prometheus] as prom
+    [Grafana] as graf
+  }
+  [<$sc,scale=0.5,color=#326CE5>\nStorageClass\nlonghorn (CSI)] as sc
+}
+database "Managed\nPostgreSQL" as db
+storage "Object storage\n(S3)" as s3
+
+lb   --> ing  : TCP 443
+ing  --> svc  : routes
+svc  -> web
+web  --> api  : REST
+api  --> pvc  : mounts
+api  --> cfg  : env, creds
+pvc  --> sc
+api  --> db   : SQL over TLS
+api  --> s3   : objects
+git  --> argo : manifests (pull)
+argo --> prod : syncs
+argo --> stg  : syncs
+cert --> ing  : TLS certs
+prom --> prod : scrapes
+graf -> prom
+@enduml

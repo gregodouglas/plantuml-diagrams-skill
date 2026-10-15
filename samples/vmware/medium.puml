@@ -1,0 +1,84 @@
+@startuml
+' ---- house style (slide) ----
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam maxMessageSize 180
+skinparam wrapWidth 180
+' NOTE: title style moved under document { } - a top-level title { LineThickness 0 } strips node borders in SVG/PDF (see NOTES.md)
+<style>
+root {
+  FontName Helvetica
+  FontSize 14
+  FontColor #1F2937
+  LineColor #475569
+  LineThickness 1.2
+}
+element { BackgroundColor #F1F5F9; LineColor #475569; RoundCorner 6 }
+arrow   { LineColor #475569; FontSize 12; MaximumWidth 180 }
+note    { BackgroundColor #FFF7E0; LineColor #B45309; FontSize 12; MaximumWidth 220 }
+document { title { FontSize 18; FontStyle bold; LineThickness 0 } }
+caption { FontSize 12; FontColor #64748B }
+legend  { FontSize 12; BackgroundColor white; LineColor #CBD5E1; MaximumWidth 320 }
+.accent { BackgroundColor #1D4ED8; FontColor white; LineColor #1E3A8A }
+.muted  { BackgroundColor #F8FAFC; FontColor #64748B; LineColor #CBD5E1 }
+</style>
+hide stereotype
+' ---- layout (Graphviz dot) ----
+skinparam linetype polyline
+skinparam nodesep 50
+skinparam ranksep 60
+left to right direction
+
+title vSphere cluster with FC SAN - 3 hosts
+
+' Takeaway: three ESXi hosts share a vDS for LAN traffic and reach the array
+' over two independent FC fabrics (A and B), so any single switch can fail.
+' Columns (left to right): management + VMs | vDS | hosts | switches | array
+
+node "vCenter Server" as vc
+node "Veeam B&R\n(vSphere API)" as veeam <<accent>>
+package "VM groups" as vmg {
+  [Domain\ncontrollers] as dc
+  [SQL] as sql
+  [File] as file
+  [App] as app
+}
+
+package "vDS-Prod" as vds {
+  [PG Mgmt] as pgm
+  [PG vMotion] as pgv
+  [PG VM-Net] as pgn
+}
+
+package "Cluster PROD\n(HA / DRS)" as cl {
+  node "esx01" as esx1
+  node "esx02" as esx2
+  node "esx03" as esx3
+}
+
+node "ToR switches\n(LAN, LACP)" as tor
+node "FC switch A" as fca
+node "FC switch B" as fcb
+
+node "Storage array" as arr {
+  database "DS-OS" as ds1
+  database "DS-SQL" as ds2
+  database "DS-File" as ds3
+}
+
+' align members in a row (under LR -[hidden]- is still two dashes = next rank)
+esx1 -[hidden]- esx2
+esx2 -[hidden]- esx3
+ds1  -[hidden]- ds2
+ds2  -[hidden]- ds3
+
+veeam -> vc
+vc    --> vds  : configures
+vmg   --> pgn  : vNICs
+vds   --> cl   : host uplinks
+cl    --> tor  : 2x 25G LAN
+cl    --> fca  : HBA port 1
+cl    --> fcb  : HBA port 2
+fca   --> arr  : path A
+fcb   --> arr  : path B
+@enduml

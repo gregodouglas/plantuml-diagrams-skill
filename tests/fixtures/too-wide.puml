@@ -1,0 +1,31 @@
+@startuml
+[Root]
+[S1] as s1
+[S2] as s2
+[S3] as s3
+[S4] as s4
+[S5] as s5
+[S6] as s6
+[S7] as s7
+[S8] as s8
+[S9] as s9
+[S10] as s10
+[S11] as s11
+[S12] as s12
+[S13] as s13
+[S14] as s14
+[Root] --> s1
+[Root] --> s2
+[Root] --> s3
+[Root] --> s4
+[Root] --> s5
+[Root] --> s6
+[Root] --> s7
+[Root] --> s8
+[Root] --> s9
+[Root] --> s10
+[Root] --> s11
+[Root] --> s12
+[Root] --> s13
+[Root] --> s14
+@enduml

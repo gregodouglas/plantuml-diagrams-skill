@@ -1,0 +1,12 @@
+@startuml
+' alt/else labels never wrap: a long one runs across the next lifeline
+participant "Web" as web
+participant "API" as api
+participant "DB" as db
+web -> api : POST /orders
+alt ok
+  api -> db : insert
+else the database rejected the insert because of a constraint
+  api -> db : rollback
+end
+@enduml

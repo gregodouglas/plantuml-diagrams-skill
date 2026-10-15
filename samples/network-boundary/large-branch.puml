@@ -1,0 +1,61 @@
+@startuml
+' ---- house style (print) ----
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam maxMessageSize 160
+skinparam wrapWidth 160
+<style>
+root {
+  FontName Helvetica
+  FontSize 12
+  FontColor #1F2937
+  LineColor #475569
+  LineThickness 1
+}
+element { BackgroundColor #F1F5F9; LineColor #475569; RoundCorner 6 }
+arrow   { LineColor #475569; FontSize 11; MaximumWidth 160 }
+note    { BackgroundColor #FFF7E0; LineColor #B45309; FontSize 11; MaximumWidth 200 }
+document { title { FontSize 15; FontStyle bold; LineThickness 0 } }
+actor   { LineThickness 1 }
+caption { FontSize 11; FontColor #64748B }
+legend  { FontSize 11; BackgroundColor white; LineColor #CBD5E1; MaximumWidth 320 }
+.accent { BackgroundColor #1D4ED8; FontColor white; LineColor #1E3A8A }
+.muted  { BackgroundColor #F8FAFC; FontColor #64748B; LineColor #CBD5E1 }
+</style>
+hide stereotype
+' ---- layout (Graphviz dot) ----
+skinparam linetype polyline
+skinparam nodesep 50
+skinparam ranksep 60
+top to bottom direction
+
+title Branch site detail
+
+cloud "Internet" as inet
+node "HQ edge FW pair\n(see HQ perimeter)" as hqfw <<muted>>
+node "Branch SD-WAN FW\nbroadband + LTE" as brfw <<accent>>
+
+rectangle "Branch LAN  10.20.0.0/16" as brlan #F0FDF4 {
+  node "Access switch\nPoE" as brsw
+  node "Workstations\nVLAN 20" as ws
+  node "IP phones\nVLAN 30" as voip
+  node "Printer\nVLAN 40" as prn
+}
+node "Guest SSID\nVLAN 50" as guest #FEF2F2
+
+inet --> brfw  : dual WAN
+brfw --> hqfw  : SD-WAN IPsec 4500
+brfw --> brsw  : 802.1Q trunk
+brfw --> guest : internet only
+brsw --> ws
+brsw --> voip
+brsw --> prn
+
+legend right
+  |= Fill |= Trust level |
+  |<#FEF2F2>   | untrusted (guest) |
+  |<#F0FDF4>   | internal: trusted |
+  |<#1D4ED8>   | branch enforcement |
+  Corporate VLANs tunnel to HQ; guest breaks out locally.
+endlegend
+@enduml

@@ -1,0 +1,26 @@
+# Normalise text to LF everywhere; the helpers are run directly by bash/python on macOS, Linux and WSL.
+* text=auto eol=lf
+
+# Extensionless helper scripts (python3 shebang) must keep LF or the shebang breaks.
+skills/plantuml-diagrams/scripts/* text eol=lf
+*.sh   text eol=lf
+*.py   text eol=lf
+*.puml text eol=lf
+*.iuml text eol=lf
+*.md   text eol=lf
+*.json text eol=lf
+
+# Renders
+*.png binary
+*.jpg binary
+*.pdf binary
+*.svg text eol=lf
+
+# Committed renders are generated from the .puml next to them: collapse them in diffs and stats.
+samples/**/out/**  linguist-generated -diff
+examples/out/**    linguist-generated -diff
+docs/diagrams/out/** linguist-generated -diff
+
+# Samples and worked examples are documentation, not the project's code.
+samples/**  linguist-documentation
+examples/** linguist-documentation

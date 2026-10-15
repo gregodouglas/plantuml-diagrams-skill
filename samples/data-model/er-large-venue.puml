@@ -1,0 +1,103 @@
+@startuml
+' ---- house style (print) ----
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam maxMessageSize 160
+skinparam wrapWidth 160
+<style>
+root {
+  FontName Helvetica
+  FontSize 12
+  FontColor #1F2937
+}
+element { BackgroundColor #F1F5F9; LineColor #475569; LineThickness 1; RoundCorner 6 }
+arrow   { LineColor #475569; LineThickness 1; FontSize 11; MaximumWidth 160 }
+note    { BackgroundColor #FFF7E0; LineColor #B45309; FontSize 11; MaximumWidth 200 }
+title   { FontSize 15; FontStyle bold }
+caption { FontSize 11; FontColor #64748B }
+legend  { FontSize 11; BackgroundColor white; LineColor #CBD5E1; MaximumWidth 320 }
+.accent { BackgroundColor #1D4ED8; FontColor white; LineColor #1E3A8A }
+.alert  { BackgroundColor #FEE2E2; FontColor #7F1D1D; LineColor #B91C1C }
+.muted  { BackgroundColor #F8FAFC; FontColor #64748B; LineColor #CBD5E1 }
+</style>
+hide stereotype
+' ---- layout (Graphviz dot) ----
+skinparam linetype polyline
+skinparam nodesep 50
+skinparam ranksep 60
+left to right direction
+
+' ---- body ----
+title Venue Ticketing: venue tables (ER)
+hide circle
+skinparam classAttributeIconSize 0
+' Columns: * = NOT NULL, no marker = nullable; tag keys <<PK>>, <<FK>>, <<UQ>> (one tag per column).
+' Crow's feet: ||--o{ one to zero-or-many, ||--|{ one to one-or-many, ||--o| one to zero-or-one,
+' |o--o{ zero-or-one to many (a nullable FK). One dash (||-o{) = same rank, two (||--o{) = next rank:
+' build rows. Two FKs to the same table: label both edges (users ||--o{ refunds : requested_by).
+' Edges are polyline (house style); switch to linetype ortho only when no edge carries a label.
+
+hide empty members
+entity "users" as users <<muted>>
+entity "venues" as venues {
+  * id : uuid <<PK>>
+  --
+  * name : text
+  * timezone : text
+  * refund_window_hours : int
+}
+entity "venue_staff" as venue_staff {
+  * venue_id : uuid <<PK>>
+  * user_id : uuid <<PK>>
+  --
+}
+entity "seat_maps" as seat_maps {
+  * id : uuid <<PK>>
+  --
+  * venue_id : uuid <<FK>>
+  * name : text
+}
+entity "sections" as sections {
+  * id : uuid <<PK>>
+  --
+  * seat_map_id : uuid <<FK>>
+  * name : text
+  * general_admission : boolean
+    capacity : int
+}
+entity "seats" as seats {
+  * id : uuid <<PK>>
+  --
+  * section_id : uuid <<FK>>
+  * row_label : text
+  * number : int
+}
+entity "events" as events {
+  * id : uuid <<PK>>
+  --
+  * venue_id : uuid <<FK>>
+  * seat_map_id : uuid <<FK>>
+  * title : text
+  * starts_at : timestamptz
+  * status : text
+}
+entity "price_tiers" as price_tiers {
+  * id : uuid <<PK>>
+  --
+  * event_id : uuid <<FK>>
+  * section_id : uuid <<FK>>
+  * name : text
+  * price_cents : int
+  * currency : char(3)
+}
+
+users       ||--o{ venue_staff
+venues      ||--o{ venue_staff
+venues      ||--o{ seat_maps
+seat_maps   ||--o{ sections
+sections    ||--o{ seats
+venues      ||--o{ events
+seat_maps   ||--o{ events
+events      ||--o{ price_tiers
+sections    ||--o{ price_tiers
+@enduml

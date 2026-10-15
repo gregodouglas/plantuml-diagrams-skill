@@ -1,0 +1,71 @@
+@startuml
+!include <C4/C4_Container>
+' ---- house style (print) ----
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam maxMessageSize 160
+skinparam wrapWidth 160
+<style>
+root {
+  FontName Helvetica
+  FontSize 12
+  FontColor #1F2937
+}
+element { BackgroundColor #F1F5F9; LineColor #475569; LineThickness 1; RoundCorner 6 }
+arrow   { LineColor #475569; LineThickness 1; FontSize 11; MaximumWidth 160 }
+note    { BackgroundColor #FFF7E0; LineColor #B45309; FontSize 11; MaximumWidth 200 }
+title   { FontSize 15; FontStyle bold }
+caption { FontSize 11; FontColor #64748B }
+legend  { FontSize 11; BackgroundColor white; LineColor #CBD5E1; MaximumWidth 320 }
+.accent { BackgroundColor #1D4ED8; FontColor white; LineColor #1E3A8A }
+.alert  { BackgroundColor #FEE2E2; FontColor #7F1D1D; LineColor #B91C1C }
+.muted  { BackgroundColor #F8FAFC; FontColor #64748B; LineColor #CBD5E1 }
+</style>
+hide stereotype
+' ---- layout (Graphviz dot) ----
+skinparam linetype polyline
+skinparam nodesep 25
+skinparam ranksep 90
+LAYOUT_TOP_DOWN()
+
+' ---- body ----
+title Venue Ticketing: containers
+' C4-PlantUML from the bundled stdlib (offline). Layout helpers: LAYOUT_TOP_DOWN(), LAYOUT_LEFT_RIGHT(),
+' LAYOUT_LANDSCAPE(), Lay_D/U/L/R(a, b). SHOW_LEGEND() must be the last line.
+
+Person(fan, "Fan", "Buys tickets")
+Person(staff, "Venue staff", "Runs events, scans")
+
+System_Boundary(vt, "Venue Ticketing") {
+  Container(fanweb, "Fan web app", "SPA, TypeScript", "Browse, seat picker, checkout")
+  Container(staffapp, "Staff app", "PWA, TypeScript", "Events, box office, scans")
+  Container(api, "Ticketing API", "FastAPI, Python", "All business logic")
+  Container(worker, "Worker", "Python", "Async jobs")
+  ContainerDb(db, "Database", "PostgreSQL 16", "System of record")
+  ContainerDb(cache, "Seat-hold cache", "Redis", "10-minute holds")
+  ContainerQueue(queue, "Job queue", "SQS + DLQ", "Slow work")
+  ContainerDb(store, "Ticket store", "S3", "Ticket PDFs")
+}
+System_Ext(idp, "Identity provider", "OIDC")
+System_Ext(pay, "Payment provider", "Cards")
+System_Ext(mail, "Email service", "Transactional")
+
+Rel(fan, fanweb, "Uses")
+Rel(staff, staffapp, "Uses")
+Rel(fanweb, api, "Calls", "JSON/HTTPS")
+Rel(staffapp, api, "Calls", "JSON/HTTPS")
+Rel(fanweb, idp, "Signs in")
+Rel(staffapp, idp, "Signs in")
+Rel(api, idp, "Checks tokens")
+Rel(api, db, "Reads/writes")
+Rel(api, cache, "Holds seats")
+Rel(api, queue, "Enqueues jobs")
+Rel(api, pay, "Charges")
+Rel(pay, api, "Webhooks")
+Rel(worker, queue, "Consumes")
+Rel(worker, db, "Reads/writes")
+Rel(worker, store, "Writes PDFs")
+Rel(worker, mail, "Sends email")
+
+SHOW_LEGEND()
+@enduml

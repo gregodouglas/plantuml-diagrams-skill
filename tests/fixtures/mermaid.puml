@@ -1,0 +1,4 @@
+@startuml
+graph TD
+  A[Start] --> B{Decision}
+@enduml

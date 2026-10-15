@@ -1,0 +1,37 @@
+@startuml
+
+
+package "Edge" {
+  [API Gateway] as gw
+  [Load Balancer] as lb
+}
+package "Services" {
+  [Order Service] as orders
+  [Inventory Service] as inv
+  [Payment Service] as pay
+  [Notification Service] as notif
+  [User Profile Service] as users
+}
+package "Data" {
+  database "Orders DB" as odb
+  database "Inventory DB" as idb
+  queue "Event Bus (Kafka)" as bus
+  storage "Object Storage" as s3
+}
+actor Customer
+Customer --> lb : HTTPS requests from web and mobile clients
+lb --> gw : forwards traffic
+gw --> orders : create / update / cancel order
+gw --> users : profile lookups and updates
+gw --> inv : stock availability check
+orders --> pay : authorize and capture payment
+orders --> odb : persist order aggregate
+orders --> bus : publish OrderCreated / OrderCancelled events
+inv --> idb : reserve and release stock
+inv --> bus : publish StockChanged events
+bus --> notif : consume events for email / SMS
+pay --> bus : publish PaymentSettled
+notif --> s3 : store rendered templates
+users --> odb : read order history
+
+@enduml

@@ -1,0 +1,60 @@
+@startuml
+' ---- house style (slide) ----
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam maxMessageSize 180
+skinparam wrapWidth 180
+<style>
+root {
+  FontName Helvetica
+  FontSize 14
+  FontColor #1F2937
+  LineColor #475569
+  LineThickness 1.2
+}
+element { BackgroundColor #F1F5F9; LineColor #475569; RoundCorner 6 }
+arrow   { LineColor #475569; FontSize 12; MaximumWidth 180 }
+note    { BackgroundColor #FFF7E0; LineColor #B45309; FontSize 12; MaximumWidth 220 }
+document { title { FontSize 18; FontStyle bold; LineThickness 0 } }
+actor   { LineThickness 1.2 }
+caption { FontSize 12; FontColor #64748B }
+legend  { FontSize 12; BackgroundColor white; LineColor #CBD5E1; MaximumWidth 320 }
+.accent { BackgroundColor #1D4ED8; FontColor white; LineColor #1E3A8A }
+.muted  { BackgroundColor #F8FAFC; FontColor #64748B; LineColor #CBD5E1 }
+</style>
+hide stereotype
+' ---- layout (Graphviz dot) ----
+skinparam linetype polyline
+skinparam nodesep 50
+skinparam ranksep 60
+left to right direction
+
+title Network boundary (small)
+
+actor "Remote user" as remote
+cloud "Internet" as inet
+node "Edge firewall\nNGFW" as fw <<accent>>
+
+rectangle "DMZ  172.16.10.0/24" as dmz #FFF7ED {
+  node "Public web\nserver" as web
+}
+rectangle "LAN  10.10.0.0/16  (trusted)" as lan #F0FDF4 {
+  node "Domain\ncontroller" as dc
+  node "Workstations" as ws
+}
+cloud "Microsoft 365" as m365
+
+remote -> inet
+inet   --> fw   : HTTPS 443, SSL VPN
+fw     --> web  : DNAT 443
+fw     <-- ws   : NAT out 443
+ws     --> dc   : LDAP, Kerberos
+fw     --> m365 : HTTPS 443
+
+legend right
+  |= Fill |= Trust zone |
+  |<#FFF7ED>   | DMZ: internet-facing |
+  |<#F0FDF4>   | LAN: trusted |
+  |<#1D4ED8>   | enforcement point |
+endlegend
+@enduml

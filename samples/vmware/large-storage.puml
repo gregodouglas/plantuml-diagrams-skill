@@ -1,0 +1,75 @@
+@startuml
+' ---- house style (print) ----
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam maxMessageSize 160
+skinparam wrapWidth 160
+' NOTE: title style moved under document { } - a top-level title { LineThickness 0 } strips node borders in SVG/PDF (see NOTES.md)
+<style>
+root {
+  FontName Helvetica
+  FontSize 12
+  FontColor #1F2937
+  LineColor #475569
+  LineThickness 1
+}
+element { BackgroundColor #F1F5F9; LineColor #475569; RoundCorner 6 }
+arrow   { LineColor #475569; FontSize 11; MaximumWidth 160 }
+note    { BackgroundColor #FFF7E0; LineColor #B45309; FontSize 11; MaximumWidth 200 }
+document { title { FontSize 15; FontStyle bold; LineThickness 0 } }
+caption { FontSize 11; FontColor #64748B }
+legend  { FontSize 11; BackgroundColor white; LineColor #CBD5E1; MaximumWidth 320 }
+.accent { BackgroundColor #1D4ED8; FontColor white; LineColor #1E3A8A }
+.muted  { BackgroundColor #F8FAFC; FontColor #64748B; LineColor #CBD5E1 }
+</style>
+hide stereotype
+' ---- layout (Graphviz dot) ----
+skinparam linetype polyline
+skinparam nodesep 50
+skinparam ranksep 60
+left to right direction
+
+title HQ storage fabric - FC A/B to array
+
+' Takeaway: every initiator has one port in fabric A and one in fabric B, and
+' each fabric reaches both array controllers: 4 paths per LUN, no shared switch.
+
+node "ESXi hosts x6\n(2 HBA ports each)" as hosts
+node "Veeam proxy\n(direct SAN)" as proxy <<accent>>
+
+node "FC switch A" as fca
+node "FC switch B" as fcb
+
+node "Array HQ" as arr {
+  node "Controller SP-A" as spa
+  node "Controller SP-B" as spb
+  package "LUNs / datastores" as luns {
+    database "DS-OS" as ds1
+    database "DS-SQL" as ds2
+    database "DS-File" as ds3
+    database "DS-Veeam" as ds4
+  }
+}
+
+' stack the LUNs in one column (operands bottom-to-top, see compute)
+ds4 -[hidden]right- ds3
+ds3 -[hidden]right- ds2
+ds2 -[hidden]right- ds1
+
+hosts -[#0072B2]-> fca : HBA 1
+hosts -[#E69F00,dashed]-> fcb : HBA 2
+proxy -[#0072B2]-> fca
+proxy -[#E69F00,dashed]-> fcb
+fca -[#0072B2]-> spa
+fca -[#0072B2]-> spb
+fcb -[#E69F00,dashed]-> spa
+fcb -[#E69F00,dashed]-> spb
+spa --> luns : active (ALUA)
+spb --> luns : standby
+
+legend bottom right
+  <color:#0072B2>━━━</color> fabric A (solid)
+  <color:#E69F00>╍╍╍</color> fabric B (dashed)
+  Fabrics never interconnect (no ISL).
+endlegend
+@enduml

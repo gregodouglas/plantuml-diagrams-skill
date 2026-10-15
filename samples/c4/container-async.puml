@@ -1,0 +1,54 @@
+@startuml
+!include <C4/C4_Container>
+' ---- house style (slide) ----
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam maxMessageSize 180
+skinparam wrapWidth 180
+<style>
+root {
+  FontName Helvetica
+  FontSize 14
+  FontColor #1F2937
+}
+element { BackgroundColor #F1F5F9; LineColor #475569; LineThickness 1.2; RoundCorner 6 }
+arrow   { LineColor #475569; LineThickness 1.2; FontSize 12; MaximumWidth 180 }
+note    { BackgroundColor #FFF7E0; LineColor #B45309; FontSize 12; MaximumWidth 220 }
+title   { FontSize 18; FontStyle bold }
+caption { FontSize 12; FontColor #64748B }
+legend  { FontSize 12; BackgroundColor white; LineColor #CBD5E1; MaximumWidth 320 }
+.accent { BackgroundColor #1D4ED8; FontColor white; LineColor #1E3A8A }
+.alert  { BackgroundColor #FEE2E2; FontColor #7F1D1D; LineColor #B91C1C }
+.muted  { BackgroundColor #F8FAFC; FontColor #64748B; LineColor #CBD5E1 }
+</style>
+hide stereotype
+' ---- layout (Graphviz dot) ----
+skinparam linetype polyline
+skinparam nodesep 50
+skinparam ranksep 120
+LAYOUT_LEFT_RIGHT()
+
+' ---- body ----
+title Venue Ticketing: containers, async path
+' C4-PlantUML from the bundled stdlib (offline). Layout helpers: LAYOUT_TOP_DOWN(), LAYOUT_LEFT_RIGHT(),
+' LAYOUT_LANDSCAPE(), Lay_D/U/L/R(a, b). SHOW_LEGEND() must be the last line.
+
+AddElementTag("accent", $bgColor="#1D4ED8", $fontColor="#FFFFFF", $borderColor="#1E3A8A", $legendText="Container in focus")
+
+System_Ext(pay, "Payment provider", "Card payments")
+Container(api, "Ticketing API", "Python, FastAPI", "Verifies webhook signatures")
+ContainerQueue(queue, "Job queue", "SQS", "With a dead-letter queue")
+Container(worker, "Worker", "Python", "PDFs, email, webhooks, hold expiry", $tags="accent")
+ContainerDb(db, "Database", "PostgreSQL 16", "System of record")
+ContainerDb(store, "Ticket store", "S3 bucket", "Rendered ticket PDFs")
+System_Ext(email, "Email service", "Transactional email")
+
+Rel(pay, api, "Sends webhooks")
+Rel(api, queue, "Enqueues jobs")
+Rel(worker, queue, "Consumes jobs")
+Rel(worker, db, "Reads/writes", "SQL")
+Rel(worker, store, "Writes PDFs")
+Rel(worker, email, "Sends email")
+
+SHOW_LEGEND()
+@enduml

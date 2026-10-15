@@ -1,0 +1,59 @@
+@startnwdiag
+' Note: the startuml form with an nwdiag block is rejected by 1.2026.8 ("Please use the startnwdiag form"); network names must be identifiers.
+' nwdiag alternative rendering of the medium VLAN map (no puml-new template exists for nwdiag)
+<style>
+root { FontName Helvetica; FontSize 12; FontColor #1F2937; LineColor #475569 }
+document { title { FontSize 15; FontStyle bold; LineThickness 0 } }
+</style>
+title Office LAN VLAN map (nwdiag)
+
+nwdiag {
+  network v10 {
+    description = "VLAN 10 Servers"
+    address = "10.10.10.0/24"
+    color = "#DCFCE7"
+    fw   [description = "Firewall\ngateway .1"];
+    dc [description = "DC / DNS\n.10"];
+    file [description = "File server\n.20"];
+    ps [description = "Print server\n.30"];
+    hv [description = "Hypervisor\n.40"];
+  }
+  network v20 {
+    description = "VLAN 20 Workstations"
+    address = "10.10.20.0/24"
+    color = "#DBEAFE"
+    fw;
+    ws [description = "Desktops\nDHCP"];
+  }
+  network v30 {
+    description = "VLAN 30 VoIP"
+    address = "10.10.30.0/24"
+    color = "#DBEAFE"
+    fw;
+    ph [description = "IP phones\nDHCP"];
+  }
+  network v40 {
+    description = "VLAN 40 Printers"
+    address = "10.10.40.0/24"
+    color = "#FFEDD5"
+    fw;
+    ps;
+    prn [description = "MFPs\n.50-.59"];
+  }
+  network v50 {
+    description = "VLAN 50 Guest"
+    address = "192.168.50.0/24"
+    color = "#FEE2E2"
+    fw;
+    gst [description = "Guest clients\nDHCP"];
+  }
+  network v99 {
+    description = "VLAN 99 Mgmt"
+    address = "10.10.99.0/24"
+    color = "#EDE9FE"
+    fw;
+    wlc [description = "WLC\n.5"];
+    nms [description = "NMS / jump\n.9"];
+  }
+}
+@endnwdiag

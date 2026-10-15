@@ -1,0 +1,71 @@
+@startuml
+' ---- house style (print) ----
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam maxMessageSize 160
+skinparam wrapWidth 160
+' NOTE: title style moved under document { } - a top-level title { LineThickness 0 } strips node borders in SVG/PDF (see NOTES.md)
+<style>
+root {
+  FontName Helvetica
+  FontSize 12
+  FontColor #1F2937
+  LineColor #475569
+  LineThickness 1
+}
+element { BackgroundColor #F1F5F9; LineColor #475569; RoundCorner 6 }
+arrow   { LineColor #475569; FontSize 11; MaximumWidth 160 }
+note    { BackgroundColor #FFF7E0; LineColor #B45309; FontSize 11; MaximumWidth 200 }
+document { title { FontSize 15; FontStyle bold; LineThickness 0 } }
+caption { FontSize 11; FontColor #64748B }
+legend  { FontSize 11; BackgroundColor white; LineColor #CBD5E1; MaximumWidth 320 }
+.accent { BackgroundColor #1D4ED8; FontColor white; LineColor #1E3A8A }
+.muted  { BackgroundColor #F8FAFC; FontColor #64748B; LineColor #CBD5E1 }
+</style>
+hide stereotype
+' ---- layout (Graphviz dot) ----
+skinparam linetype polyline
+skinparam nodesep 50
+skinparam ranksep 60
+top to bottom direction
+
+title Namespace prod - workloads, config, storage
+
+' Takeaway: in ns prod every Deployment is stateless; state lives only in
+' PVCs (Longhorn), the managed DB and S3, and config comes from ConfigMap/Secret.
+
+rectangle "ns: prod" as prod {
+  [Ingress\napp.example.com] as ingr
+  [Service web] as svcw
+  [Service api] as svca
+  [Deployment web\n3 pods] as web
+  [Deployment api\n3 pods] as api
+  [HPA api\n3-10 pods] as hpa
+  [Deployment worker\n2 pods] as worker
+  [ConfigMap\napp-config] as cm
+  [Secret db-creds\n(ExternalSecret)] as sec
+  storage "PVC uploads\n(RWX)" as pvc
+  [StatefulSet redis] as redis
+  storage "PVC redis-data\n(RWO)" as pvcr
+}
+[StorageClass\nlonghorn (CSI)] as sc
+database "Managed\nPostgreSQL" as db
+storage "Object storage\n(S3)" as s3
+
+ingr   --> svcw   : path /
+ingr   --> svca   : path /api
+svcw   --> web    : selects
+svca   --> api    : selects
+hpa    --> api    : scales
+api    --> cm     : env
+api    --> sec    : creds
+api    --> pvc    : mounts
+api    --> redis  : enqueues jobs
+worker --> redis  : consumes
+redis  --> pvcr   : mounts
+pvc    --> sc
+pvcr   --> sc
+api    --> db     : SQL over TLS
+worker --> db     : SQL over TLS
+worker --> s3     : writes objects
+@enduml

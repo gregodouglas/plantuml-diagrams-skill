@@ -1,0 +1,87 @@
+@startuml
+' ---- house style (print) ----
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam maxMessageSize 160
+skinparam wrapWidth 160
+' NOTE: title style moved under document { } - a top-level title { LineThickness 0 } strips node borders in SVG/PDF (see NOTES.md)
+<style>
+root {
+  FontName Helvetica
+  FontSize 12
+  FontColor #1F2937
+  LineColor #475569
+  LineThickness 1
+}
+element { BackgroundColor #F1F5F9; LineColor #475569; RoundCorner 6 }
+arrow   { LineColor #475569; FontSize 11; MaximumWidth 160 }
+note    { BackgroundColor #FFF7E0; LineColor #B45309; FontSize 11; MaximumWidth 200 }
+document { title { FontSize 15; FontStyle bold; LineThickness 0 } }
+caption { FontSize 11; FontColor #64748B }
+legend  { FontSize 11; BackgroundColor white; LineColor #CBD5E1; MaximumWidth 320 }
+.accent { BackgroundColor #1D4ED8; FontColor white; LineColor #1E3A8A }
+.muted  { BackgroundColor #F8FAFC; FontColor #64748B; LineColor #CBD5E1 }
+</style>
+hide stereotype
+' ---- layout (Graphviz dot) ----
+skinparam linetype polyline
+skinparam nodesep 50
+skinparam ranksep 60
+left to right direction
+
+title HQ compute and network - clusters, vDS, ToR A/B
+
+' Takeaway: every host has two pNICs, one to each ToR switch, so the vDS
+' (all port groups) survives the loss of either switch.
+
+node "vCenter HQ" as vc
+package "VM groups" as vmg {
+  [Domain\ncontrollers] as dc
+  [SQL] as sql
+  [File] as file
+  [App] as app
+}
+package "vDS-Prod" as vds {
+  [PG Mgmt] as pgm
+  [PG vMotion] as pgv
+  [PG VM-Net] as pgn
+  [PG Backup] as pgb
+}
+package "Cluster PROD (HA/DRS)" as prod {
+  node "esx01" as esx1
+  node "esx02" as esx2
+  node "esx03" as esx3
+  node "esx04" as esx4
+}
+package "Cluster MGMT\n(vCenter, Veeam VMs)" as mgmt {
+  node "esx05" as esx5
+  node "esx06" as esx6
+}
+package "ToR pair (MLAG)" as tor {
+  node "ToR A" as tora
+  node "ToR B" as torb
+}
+
+' align members: -[hidden]right- = same rank (a column under LR), -[hidden]- = next rank (a row)
+' (operands written bottom-to-top: under LR the stack comes out reversed)
+app  -[hidden]right- file
+file -[hidden]right- sql
+sql  -[hidden]right- dc
+pgb  -[hidden]right- pgn
+pgn  -[hidden]right- pgv
+pgv  -[hidden]right- pgm
+esx3 -[hidden]right- esx1
+esx4 -[hidden]right- esx2
+esx1 -[hidden]- esx2
+esx3 -[hidden]- esx4
+esx5 -[hidden]- esx6
+
+vc   --> vds  : configures
+vmg  --> pgn  : vNICs
+vds  --> prod : host uplinks
+vds  --> mgmt : host uplinks
+prod --> torb : vmnic1
+prod --> tora : vmnic0
+mgmt --> torb : vmnic1
+mgmt --> tora : vmnic0
+@enduml

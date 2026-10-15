@@ -1,0 +1,73 @@
+@startuml
+!include <C4/C4_Container>
+' ---- house style (slide) ----
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam maxMessageSize 180
+skinparam wrapWidth 180
+<style>
+root {
+  FontName Helvetica
+  FontSize 14
+  FontColor #1F2937
+}
+element { BackgroundColor #F1F5F9; LineColor #475569; LineThickness 1.2; RoundCorner 6 }
+arrow   { LineColor #475569; LineThickness 1.2; FontSize 12; MaximumWidth 180 }
+note    { BackgroundColor #FFF7E0; LineColor #B45309; FontSize 12; MaximumWidth 220 }
+title   { FontSize 18; FontStyle bold }
+caption { FontSize 12; FontColor #64748B }
+legend  { FontSize 12; BackgroundColor white; LineColor #CBD5E1; MaximumWidth 320 }
+.accent { BackgroundColor #1D4ED8; FontColor white; LineColor #1E3A8A }
+.alert  { BackgroundColor #FEE2E2; FontColor #7F1D1D; LineColor #B91C1C }
+.muted  { BackgroundColor #F8FAFC; FontColor #64748B; LineColor #CBD5E1 }
+</style>
+hide stereotype
+' ---- layout (Graphviz dot) ----
+skinparam linetype polyline
+skinparam nodesep 50
+skinparam ranksep 60
+LAYOUT_LEFT_RIGHT()
+
+' ---- body ----
+title Self-hosted CI/CD platform
+
+Person(dev, "Developers", "Push code, review PRs")
+Container(sso, "SSO (OIDC)", "identity provider", "One login for all tools", $tags="accent")
+Container(vault, "Vault", "HashiCorp Vault", "Job-scoped credentials", $tags="alert")
+
+System_Boundary(forge, "Forgejo") {
+  Container(scm, "Repos & PRs", "Forgejo", "Source, reviews, workflows")
+  Container(reg, "Registry", "Forgejo", "Container images")
+}
+System_Boundary(build, "Build network") {
+  Container(runner, "Actions runners", "Forgejo Actions", "Execute pipeline jobs")
+  Container(legacy, "Legacy build server", "optional", "Being retired", $tags="muted")
+}
+System_Boundary(gates, "Quality & security gates") {
+  Container(semgrep, "Semgrep", "SAST", "Source security scan")
+  Container(sonar, "SonarQube", "code quality", "Quality gate")
+  Container(grype, "Grype", "image scan", "Image CVEs")
+}
+System_Boundary(deliv, "Delivery") {
+  Container(tf, "Terraform", "IaC", "Provisions cluster infra")
+  Container(ansible, "Ansible", "config & deploy", "Configures nodes, deploys")
+}
+Container(k8s, "Kubernetes cluster", "Kubernetes", "Runs the workloads")
+
+Rel(dev, scm, "push / PR")
+Rel(scm, runner, "jobs")
+Rel(vault, runner, "secrets")
+Rel(runner, semgrep, "scan")
+Rel(runner, sonar, "scan")
+Rel(runner, grype, "scan")
+Rel(runner, reg, "push image")
+Rel(runner, tf, "plan / apply")
+Rel(runner, ansible, "playbooks")
+Rel(tf, k8s, "provisions")
+Rel(ansible, k8s, "deploys")
+Lay_D(dev, sso)
+Lay_D(sso, vault)
+
+caption Blue = identity (SSO signs everyone in); red = secrets (Vault); grey = legacy, being retired. The cluster pulls images from the registry (edge omitted).
+SHOW_LEGEND()
+@enduml

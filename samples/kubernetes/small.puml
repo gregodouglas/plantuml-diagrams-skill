@@ -1,0 +1,57 @@
+@startuml
+' ---- house style (slide) ----
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam maxMessageSize 180
+skinparam wrapWidth 180
+' NOTE: title style moved under document { } - a top-level title { LineThickness 0 } strips node borders in SVG/PDF (see NOTES.md)
+<style>
+root {
+  FontName Helvetica
+  FontSize 14
+  FontColor #1F2937
+  LineColor #475569
+  LineThickness 1.2
+}
+element { BackgroundColor #F1F5F9; LineColor #475569; RoundCorner 6 }
+arrow   { LineColor #475569; FontSize 12; MaximumWidth 180 }
+note    { BackgroundColor #FFF7E0; LineColor #B45309; FontSize 12; MaximumWidth 220 }
+document { title { FontSize 18; FontStyle bold; LineThickness 0 } }
+caption { FontSize 12; FontColor #64748B }
+legend  { FontSize 12; BackgroundColor white; LineColor #CBD5E1; MaximumWidth 320 }
+.accent { BackgroundColor #1D4ED8; FontColor white; LineColor #1E3A8A }
+.muted  { BackgroundColor #F8FAFC; FontColor #64748B; LineColor #CBD5E1 }
+</style>
+hide stereotype
+' ---- layout (Graphviz dot) ----
+skinparam linetype polyline
+skinparam nodesep 50
+skinparam ranksep 60
+left to right direction
+
+title Kubernetes app - request and data path
+
+' Takeaway: requests enter via the cloud LB and ingress, reach the web pods
+' through a Service; state lives on a CSI-backed PVC and an external managed DB.
+
+cloud "Cloud LB" as lb
+node "Kubernetes cluster" as k8s {
+  [Ingress controller\n(ingress-nginx)] as ing
+  rectangle "ns: prod" as prod {
+    [Service web] as svc
+    [Deployment web\n3 pods] as pods
+    storage "PVC data" as pvc
+  }
+  [StorageClass longhorn\n(CSI provisioner)] as sc
+  [Argo CD] as argo <<accent>>
+}
+database "Managed\nPostgreSQL" as db
+
+lb   --> ing  : TCP 443
+ing  --> svc  : routes /
+svc  -> pods
+pods --> pvc  : mounts
+pvc  -> sc
+pods --> db   : SQL over TLS
+argo --> prod : syncs from Git
+@enduml

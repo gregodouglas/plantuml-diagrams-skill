@@ -1,0 +1,83 @@
+@startuml
+' ---- house style (print) ----
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam maxMessageSize 160
+skinparam wrapWidth 160
+<style>
+root {
+  FontName Helvetica
+  FontSize 12
+  FontColor #1F2937
+}
+element { BackgroundColor #F1F5F9; LineColor #475569; LineThickness 1; RoundCorner 6 }
+arrow   { LineColor #475569; LineThickness 1; FontSize 11; MaximumWidth 160 }
+note    { BackgroundColor #FFF7E0; LineColor #B45309; FontSize 11; MaximumWidth 200 }
+title   { FontSize 15; FontStyle bold }
+caption { FontSize 11; FontColor #64748B }
+legend  { FontSize 11; BackgroundColor white; LineColor #CBD5E1; MaximumWidth 320 }
+.accent { BackgroundColor #1D4ED8; FontColor white; LineColor #1E3A8A }
+.alert  { BackgroundColor #FEE2E2; FontColor #7F1D1D; LineColor #B91C1C }
+.muted  { BackgroundColor #F8FAFC; FontColor #64748B; LineColor #CBD5E1 }
+</style>
+hide stereotype
+' ---- layout (Graphviz dot) ----
+skinparam linetype polyline
+skinparam nodesep 50
+skinparam ranksep 60
+top to bottom direction
+
+' ---- body ----
+title Venue Ticketing: schema overview (ER)
+hide circle
+hide empty members
+skinparam classAttributeIconSize 0
+' Columns: * = NOT NULL, no marker = nullable; tag keys <<PK>>, <<FK>>, <<UQ>> (one tag per column).
+' Crow's feet: ||--o{ one to zero-or-many, ||--|{ one to one-or-many, ||--o| one to zero-or-one,
+' |o--o{ zero-or-one to many (a nullable FK). One dash (||-o{) = same rank, two (||--o{) = next rank:
+' build rows. Two FKs to the same table: label both edges (users ||--o{ refunds : requested_by).
+' Edges are polyline (house style); switch to linetype ortho only when no edge carries a label.
+
+entity "users" as users
+entity "venues" as venues
+entity "venue_staff" as venue_staff
+entity "seat_maps" as seat_maps
+entity "sections" as sections
+entity "seats" as seats
+entity "events" as events
+entity "price_tiers" as price_tiers
+entity "seat_holds" as seat_holds
+entity "orders" as orders
+entity "order_items" as order_items
+entity "payments" as payments
+entity "refunds" as refunds
+entity "tickets" as tickets
+entity "scans" as scans
+entity "webhook_events" as webhook_events
+
+venue_staff }o--|| venues
+venue_staff }o--|| users
+seat_maps }o--|| venues
+sections }o--|| seat_maps
+seats }o--|| sections
+events }o--|| venues
+events }o--|| seat_maps
+price_tiers }o--|| events
+price_tiers }o--|| sections
+seat_holds }o--|| events
+seat_holds }o--|| users
+orders }o--|| users
+orders }o--|| events
+orders }o--o| seat_holds
+order_items }o--|| orders
+order_items }o--|| price_tiers
+order_items }o--o| seats
+payments }o--|| orders
+refunds }o--|| orders
+refunds }o--|| payments
+refunds }o--|| users : requested_by
+refunds }o--o| users : reviewed_by
+tickets |o--|| order_items
+scans }o--|| tickets
+scans }o--|| users
+@enduml
