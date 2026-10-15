@@ -389,15 +389,16 @@ title {title}
 ' DFD notation: process = usecase (ellipse), external entity = rectangle, data store = database,
 ' trust boundary = rectangle <<boundary>> (dashed, from the style block); PII flows -[#D55E00,bold]-> and say (PII).
 ' DFD recipe: number processes (0, 1, 1.1); draw WRITES to stores and say "reads omitted" in the legend
-' when read-backs would loop around the diagram. Rows top-to-bottom (external entities / App / Data); write
-' upward flows with a flipped arrowhead (server <-- p2) so the rows hold. Keep one level per diagram:
+' when read-backs would loop around the diagram. Rows by zone, top-to-bottom (Public / App / Data+Third party);
+' write upward flows with a flipped arrowhead (server <-- p2) so the rows hold. Keep one level per diagram:
 ' level 0 (context) then one level-1 per process. Boundaries stay top-to-bottom even for slides (direction="tb").
-' External entities sit outside any boundary: a box per zone you do not control adds a row of height.
-' No same-rank flows between processes in a zone (p1 -> p2): Graphviz puts another process between them and the
-' flow loops over the zone title. Hand off through a store instead (reads omitted).
+' Hand-offs between processes in one zone: draw them through the store (p2 <-- db), not as a same-rank p1 -> p2;
+' Graphviz can put another process between the two, and the flow then loops over the zone title.
 
-rectangle "Client" as client
-rectangle "Field worker" as server
+rectangle "Public" as z_pub <<boundary>> {{
+  rectangle "Client" as client
+  rectangle "Field worker" as server
+}}
 rectangle "App" as z_app <<boundary>> {{
   usecase "1 Intake" as p1
   usecase "2 Assign" as p2
@@ -407,21 +408,24 @@ rectangle "Data" as z_data <<boundary>> {{
   database "Audit log" as audit
   database "Case DB" as db
 }}
-rectangle "Partner portal" as court
+rectangle "External" as z_ext <<boundary>> {{
+  rectangle "Partner portal" as court
+}}
 
-' Flows that cross into a boundary target the ZONE (z_app); flows out to a node target the node.
+' Flows from outside into App or External target the ZONE (z_app, z_ext); flows to and from a store target the store.
 ' Short zone titles + zone-level links are what keeps edges off the titles (measured: 3 crossings -> 0).
 client -[#D55E00,bold]-> z_app : new case (PII)
 server -[#D55E00,bold]-> z_app : visit + GPS (PII)
+p2 <-- db : open cases
 server <-- p2 : job offer
 p1 -[#D55E00,bold]-> db : case (PII)
 p3 --> db : visit
 p3 --> audit : event
-p2 --> court : filing
+p2 --> z_ext : filing
 
 legend right
   <color:#D55E00><b>orange bold</b></color> = carries PII
-  dashed box = trust boundary; reads from stores omitted
+  dashed box = trust boundary; other store reads omitted
 endlegend
 """),
 
