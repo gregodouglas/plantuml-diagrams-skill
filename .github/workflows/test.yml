@@ -33,7 +33,7 @@ jobs:
         # Liberation Sans is metric-compatible with the Helvetica the house style names (docs/INSTALL-RHEL.md)
         run: |
           sudo apt-get update -q
-          sudo apt-get install -y -q --no-install-recommends fontconfig fonts-liberation fonts-dejavu-core
+          sudo apt-get install -y -q --no-install-recommends fontconfig fonts-liberation
           if [ "${{ matrix.graphviz }}" = distro ]; then
             sudo apt-get install -y -q --no-install-recommends graphviz
           else
@@ -42,6 +42,21 @@ jobs:
             echo "$GRAPHVIZ_DEB_SHA256  $deb" | sha256sum -c -
             sudo apt-get install -y -q "$deb"
           fi
+      - name: Prefer Liberation Sans
+        # Java does not find "Helvetica" and falls back to its Dialog font, which fontconfig resolves to the first
+        # sans-serif family: DejaVu Sans (about 12% wider) unless Liberation Sans is preferred
+        run: |
+          mkdir -p ~/.config/fontconfig
+          cat > ~/.config/fontconfig/fonts.conf <<'XML'
+          <?xml version="1.0"?>
+          <!DOCTYPE fontconfig SYSTEM "fonts.dtd">
+          <fontconfig>
+            <alias><family>sans-serif</family><prefer><family>Liberation Sans</family></prefer></alias>
+            <alias><family>Helvetica</family><prefer><family>Liberation Sans</family></prefer></alias>
+          </fontconfig>
+          XML
+          fc-cache -f >/dev/null
+          echo "sans-serif -> $(fc-match sans-serif)"; echo "Helvetica  -> $(fc-match Helvetica)"
       - name: Install PlantUML (pinned, checksum verified)
         run: |
           mkdir -p "$RUNNER_TEMP/plantuml"
