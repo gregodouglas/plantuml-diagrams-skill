@@ -14,8 +14,9 @@ All notable changes to this project are documented here. The format follows
   is `null` for them.
 - `puml-check` reports `bundled-edges` when two or more edges at one node leave it along one shared trunk, so they
   read as one line with their labels crowded beside it.
-- `puml-check` reports `crowded-ends` when the end texts of two different edges (multiplicities in class diagrams) sit
-  less than half a font size apart, which `text-overlap` misses because they never intersect.
+- `puml-check` reports `crowded-ends` when the multiplicities of two edges at one class sit less than half a font size
+  apart, which `text-overlap` misses because they never intersect. On a shared trunk they are part of the
+  `bundled-edges` report instead.
 
 ### Changed
 
