@@ -15,9 +15,9 @@ jobs:
       fail-fast: false
       matrix:
         # 15.1.1: the Graphviz the references were verified with (official .deb, checksum verified).
-        # distro: Ubuntu's own 2.43, close to what RHEL 8/9 ship; layouts differ, so it reports but does not gate.
+        # distro: Ubuntu's own 2.43, close to what RHEL 8/9 ship; layouts differ, so it warns but does not gate
+        # (known: the dfd template comes out taller than 16:9).
         graphviz: ["15.1.1", "distro"]
-    continue-on-error: ${{ matrix.graphviz == 'distro' }}
     name: run.sh (Graphviz ${{ matrix.graphviz }})
     env:
       GRAPHVIZ_DEB_SHA256: 02c70b9d42149f5e2ba0e3882643b22904720de50a0a3da84a30b8f32e8a1497
@@ -70,7 +70,12 @@ jobs:
           dot -V
           python3 --version
       - name: tests/run.sh
-        run: tests/run.sh
+        run: |
+          if [ "${{ matrix.graphviz }}" = distro ]; then
+            tests/run.sh || echo "::warning title=Graphviz 2.43::tests/run.sh failed on the distro Graphviz; see the FAIL lines in the log"
+          else
+            tests/run.sh
+          fi
       - name: Keep the renders of a failed run
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
