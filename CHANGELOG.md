@@ -8,9 +8,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Changed
 
-- The check-and-fix loop no longer stops at a fixed 3 rounds. It keeps going while each `puml-check` run lowers the
-  number of `warn`/`ERROR` lines, and stops after two runs with no drop, or at 10 runs. `references/layout.md` now
-  lists simplify and split moves for each diagram type.
+- The check-and-fix loop no longer stops at a fixed 3 rounds. Counting `warn` lines from the first run that renders,
+  it keeps going while a run sets a new low, and stops after two runs that do not, or at 12 runs.
+  `references/choosing-and-design.md` now lists simplify and split moves for each diagram type.
 
 ## [0.1.0] - 2026-10-14
 

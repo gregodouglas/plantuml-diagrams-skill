@@ -42,7 +42,7 @@ participant "puml-render" as render
 user   -> agent    : ask for a diagram
 agent  -> new      : scaffold a template
 new   --> agent    : .puml with house style
-loop until clean\nor stuck
+loop until stuck
   agent  -> check ++ : check --target 16:9
   check  -> puml     : render SVG
   puml  --> check    : SVG or syntax error
