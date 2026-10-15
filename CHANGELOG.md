@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- The dfd template fits 16:9 on Graphviz 2.4x (RHEL 8/9) as well as 15.x: external entities sit outside the trust
+  boundaries, and processes hand off through a store instead of a same-rank flow that looped over the zone title
+  (#15). `references/domains.md` records both rules; CI now gates on Graphviz 2.43 too.
+
 ## [0.2.0] - 2026-10-15
 
 ### Added

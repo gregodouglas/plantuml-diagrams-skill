@@ -38,7 +38,11 @@ General rules that came out of every domain:
 - Notation: process = `usecase` (ellipse, numbered 0 / 1 / 1.1), external entity = `rectangle`, store = `database` (`storage` looks like a process), boundary = `rectangle <<boundary>>` (dashed, transparent), PII flow = `-[#D55E00,bold]->` with "(PII)" in the label and a legend line `<color:#D55E00><b>orange</b></color> = PII`.
 - Levels: level 0 (one process, entities, stores) then one level-1 per process (7-9 nodes). Never both in one diagram.
 - Draw **writes** to stores and say "reads omitted" in the legend; read-backs loop around the whole diagram.
-- Rows by zone (Public / App / Data / Third party) top-to-bottom with flipped arrowheads for upward flows.
+- Rows top-to-bottom (external entities / App / Data) with flipped arrowheads for upward flows. External entities sit
+  outside any boundary; a boundary box around them adds a title row of height, and with one more row the template no
+  longer fit 16:9 on Graphviz 2.43 (573x610, against 477x485 without; same on 15.1.1, PlantUML 1.2026.8).
+- No same-rank flows between processes in one zone (`p1 -> p2`): Graphviz places another process between them and the
+  flow loops over the zone title. Hand off through a store (reads omitted) or draw the flow at level 1.
 - Boundary titles are centred at the top; a flow entering from above crosses the title. What cleared all three crossings in the template, in combination: one-word zone titles (`App`, `Data`), cross-boundary flows linked to the zone rectangle, and the store that receives most flows declared last so it sits away from the title centre. `package`/`frame` titles and `HorizontalAlignment` made no difference. Dashed boundary + dashed "async" arrows clash; use a colour for one of them.
 
 
