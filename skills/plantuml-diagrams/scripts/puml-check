@@ -568,6 +568,43 @@ def analyse(svg_path, target, fit_width, src_lines=()):
                     add("group-label-on-lifeline", f"'{t['text']}' starts on its group's first lifeline (PlantUML usually draws it there); keep it short, or start the group at a participant further left", text_line(t["text"]), level="info")
             elif hits:
                 add("message-crosses-lifeline", f"'{t['text']}' is crossed by {len(hits)} lifeline(s); shorten it, set maxMessageSize / arrow MaximumWidth, or reorder participants", text_line(t["text"]))
+        # 5a. message arrows drawn across the lifelines between their two participants. A message is a horizontal
+        # line with an arrowhead polygon at one end; both ends sit on a lifeline or on an activation bar beside it.
+        def lifeline_at(x):
+            near = [l for l in xs if abs(l - x) <= 12]
+            return min(near, key=lambda l: abs(l - x)) if near else None
+        heads = [sh["box"] for sh in shapes if sh["tag"] == "polygon" and sh["box"][2] - sh["box"][0] <= 16]
+        def has_head(p, q):
+            return any(h[1] - 1 <= p[1] <= h[3] + 1 and h[0] - 8 <= x <= h[2] + 8 for h in heads for x in (p[0], q[0]))
+        # participant names: texts in the head boxes that end where the lifelines start, or (actor, database) just
+        # above the lifeline; one SVG text per word, so join them per lifeline in reading order
+        head_boxes = [sh["box"] for sh in shapes if sh["tag"] == "rect" and abs(sh["box"][3] - ly0) <= 3]
+        head_row = {}
+        for t in T:
+            b = t["box"]
+            if xs and (any(contains(h, b, 1.0) for h in head_boxes) or ly0 - 1.6 * t["fs"] <= b[3] <= ly0 + 2):
+                cx = (b[0] + b[2]) / 2
+                head_row.setdefault(min(xs, key=lambda l: abs(l - cx)), []).append(t)
+        def pname(x):
+            ws = sorted(head_row.get(x, []), key=lambda t: (round(t["box"][1]), t["box"][0]))
+            return " ".join(t["text"] for t in ws) or f"x={x:.0f}"
+        n_msg, spans = 0, {}
+        for p, q, st, da in out["lines"]:
+            if abs(p[1] - q[1]) > 0.5 or abs(p[0] - q[0]) < 1 or not has_head(p, q):
+                continue
+            a, b = lifeline_at(p[0]), lifeline_at(q[0])
+            if a is None or b is None or a == b:
+                continue
+            n_msg += 1
+            k = sum(1 for x in xs if min(a, b) < x < max(a, b))
+            if k:
+                pair = tuple(sorted((a, b)))
+                spans[pair] = spans.get(pair, (0, k))[0] + 1, k
+        rep["lifeline_crossings"] = sum(c * k for c, k in spans.values())
+        if spans:
+            worst = sorted(spans.items(), key=lambda kv: -kv[1][0] * kv[1][1])[:3]
+            pairs = ", ".join(f"{pname(a)} - {pname(b)}: {c} message(s) over {k} lifeline(s)" for (a, b), (c, k) in worst)
+            add("message-spans-lifelines", f"{sum(c for c, k in spans.values())} of {n_msg} messages cross the lifelines between their participants ({pairs}); reorder participants so most messages go between neighbours", level="info")
     # 5b. other diagram types (nwdiag, ...): text struck through by a plain line
     if dtype not in ("SEQUENCE", "DESCRIPTION", "CLASS", "STATE", "OBJECT"):
         shapes = out["anyshapes"]
@@ -588,7 +625,8 @@ def analyse(svg_path, target, fit_width, src_lines=()):
         for j in range(i + 1, len(keys)):
             if any(segs_cross(*a, *b) for a in segs[keys[i]] for b in segs[keys[j]]):
                 crossings += 1
-    rep["edge_crossings"] = crossings
+    # sequence messages are not edges: report null rather than a 0 that reads as "no crossings"
+    rep["edge_crossings"] = None if dtype == "SEQUENCE" else crossings
     if crossings and len(E) and crossings >= max(4, len(E)):
         add("many-crossings", f"{crossings} edge crossings for {len(E)} edges; reorder declarations, link to packages instead of members, or split", level="info")
     n_clusters = len({s["owner"][1] for s in S if s["owner"][0] == "cluster"})
@@ -665,7 +703,8 @@ def print_text(rep):
         extra = f"  target={rep['target_aspect']} err={rep['aspect_error']:+.2f}" if "target_aspect" in rep else ""
         print(f"  {rep['diagram_type']} {rep['width']:.0f}x{rep['height']:.0f} ratio={rep['aspect']}{extra}  "
               f"texts={rep['counts']['texts']} nodes={rep['counts']['nodes']} edges={rep['counts']['edges']} "
-              f"crossings={rep['edge_crossings']} density={rep['text_density']}"
+              + (f"crossings=n/a lifeline-crossings={rep['lifeline_crossings']}" if "lifeline_crossings" in rep
+                 else f"crossings={rep['edge_crossings']}") + f" density={rep['text_density']}"
               + (f" minfont@fit={rep['min_font_px_at_fit']}" if "min_font_px_at_fit" in rep else ""))
         for i in rep["issues"]:
             ln = f"line {i['line']:>3}" if i.get("line") else "        "

@@ -1,0 +1,27 @@
+@startuml
+' messages between non-neighbours cross the lifelines in between: 3 such messages, 5 crossings
+' (frames, dividers, self-messages, notes and activation bars must not count)
+actor "User" as u
+participant "Gateway" as gw
+participant "Orders" as ord
+database "Orders DB" as db
+u -> gw : place order
+activate gw
+gw -> ord : create
+activate ord
+ord -> ord : validate
+activate ord
+deactivate ord
+== Persist ==
+alt stock ok
+  ord -> db : insert
+  note right of db : row lock
+else out of stock
+  ord --> gw : rejected
+end
+u -> ord : poll status
+u -> db : direct read
+db --> u : rows
+ord --> gw : created
+deactivate ord
+@enduml
