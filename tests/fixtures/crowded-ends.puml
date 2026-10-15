@@ -1,0 +1,16 @@
+@startuml
+' with nodesep 1 the multiplicities of two edges at Payment crowd without sharing a trunk (1.8 px apart, side by
+' side, so font height does not move them; nodesep 12 clears them)
+hide circle
+skinparam nodesep 1
+class Order
+class Payment
+class Refund
+class Invoice
+class Shipment
+Order "1" --> "0..*" Payment
+Order "1" --> "0..*" Refund
+Order "1" --> "0..*" Invoice
+Order "1" --> "0..*" Shipment
+Payment "1" -> "1" Refund
+@enduml

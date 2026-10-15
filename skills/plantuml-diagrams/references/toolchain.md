@@ -46,6 +46,7 @@ fc-cache -f && fc-match sans-serif   # "Liberation Sans"
 | `edge-through-node` / `edge-through-cluster` (info) | an edge passes over a node or package it does not connect to | reorder declarations, `[norank]`, move the node, split |
 | `edge-crosses-nested-borders` (info) | an edge crosses 3+ container borders (line drawn over boxes) | link the container instead of the inner node; flatten nesting |
 | `detached-label` | label > 5x font size from its edge | drop ortho; shorter edge |
+| `crowded-ends` | class diagrams: multiplicities of two edges at one node less than half a font size apart (on a shared trunk they are reported in `bundled-edges` instead) | raise `skinparam nodesep`, or `--->` on one of the edges |
 | `bundled-edges` | two or more edges at one node run along one shared trunk (40 px or more within 3 px of each other, 20 px clear of the node); they read as one line with crowded labels | give each target its own rank (`--->` on one edge), move the detail into the node's text, link to a package |
 | `message-crosses-lifeline` | sequence text crossed by intermediate lifelines | reorder participants, shorten, wrap |
 | `message-spans-lifelines` (info) | sequence arrows drawn across the lifelines between their two participants; names the worst pairs. The summary line prints `crossings=n/a lifeline-crossings=N` for sequence diagrams | reorder participants so the named pairs are neighbours |

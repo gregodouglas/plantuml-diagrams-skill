@@ -34,6 +34,7 @@ SLOT = {"16:9": (1200, 600), "4:3": (900, 560), "letter": (624, 864), "a4": (602
 FIT_DEFAULT = {k: v[0] for k, v in SLOT.items()}
 FIT_HEIGHT = {k: v[1] for k, v in SLOT.items()}
 ASC, DESC = 0.80, 0.22      # ascent/descent as fraction of font-size (Java sans)
+MULT = re.compile(r"(?:[\d*]+|[nNmM])(?:\.\.(?:[\d*]+|[nNmM]))?")  # multiplicities: 1, *, 0..*, 1..n, 0..N
 TOL = 1.0                   # px shrink on boxes before intersecting
 ASPECT_TOL = 0.29           # |ln(ratio/target)| above this -> issue (about 1.33x off)
 MIN_FONT_PX = 9.0
@@ -492,7 +493,7 @@ def analyse(svg_path, target, fit_width, src_lines=()):
     for t in T:
         o = t["owner"]
         if not o or o[0] != "link" or o[1] not in E: continue
-        if re.fullmatch(r"[\d.*]+|[<>]", t["text"]):   # multiplicities / direction glyphs sit at the ends
+        if MULT.fullmatch(t["text"]) or t["text"] in ("<", ">"):   # multiplicities / direction glyphs sit at the ends
             continue
         blk = label_blocks.setdefault(o[1], {"box": t["box"], "fs": t["fs"], "words": [], "owner": o})
         b = blk["box"]; tb = t["box"]
@@ -500,7 +501,7 @@ def analyse(svg_path, target, fit_width, src_lines=()):
         blk["words"].append(t["text"]); blk["fs"] = max(blk["fs"], t["fs"])
     for eid, blk in label_blocks.items():
         label = " ".join(blk["words"])
-        if re.fullmatch(r"[\d.*]+", label.replace(" ", "")):   # multiplicities sit at the ends, skip
+        if all(MULT.fullmatch(w) for w in label.split()):   # multiplicities sit at the ends, skip
             continue
         segs_e = [(p, q) for poly in E[eid]["polys"] for p, q in zip(poly, poly[1:])]
         pts = [(p[0] + (q[0]-p[0])*k/10, p[1] + (q[1]-p[1])*k/10) for p, q in segs_e for k in range(11)]
@@ -678,10 +679,35 @@ def analyse(svg_path, target, fit_width, src_lines=()):
                 groups.remove(h); g.update({k: max(v, g.get(k, 0)) for k, v in h.items()})
             groups.append(g)
         trunks += [(node, g) for g in groups]
-    for node, es in trunks:
+    # 6b. class diagrams: multiplicities of two edges at one node that nearly touch read as one jumble but never
+    # intersect, so text-overlap misses them. On a shared trunk they are part of that report; elsewhere their own.
+    crowded, notes = [], {}
+    if dtype in ("CLASS", "CLASS/ER", "OBJECT"):
+        LT = [t for t in T if t["owner"] and t["owner"][0] == "link" and t["owner"][1] in E and MULT.fullmatch(t["text"])]
+        for i in range(len(LT)):
+            for j in range(i + 1, len(LT)):
+                a, b = LT[i], LT[j]
+                ka, kb = a["owner"][1], b["owner"][1]
+                shared = {x for x in (E[ka].get("ends") or ()) if x} & {x for x in (E[kb].get("ends") or ()) if x}
+                A, B = a["box"], b["box"]
+                if ka == kb or not shared or inter(shrink(A), shrink(B)):   # an intersection is text-overlap
+                    continue
+                gap = math.hypot(max(B[0] - A[2], A[0] - B[2], 0), max(B[1] - A[3], A[1] - B[3], 0))
+                if gap >= 0.5 * min(a["fs"], b["fs"]):
+                    continue
+                n = next((t for t, (node, es) in enumerate(trunks) if node in shared and ka in es and kb in es), None)
+                if n is not None:
+                    notes.setdefault(n, []).append(f"'{a['text']}' and '{b['text']}' {gap:.1f}px apart")
+                else:
+                    crowded.append((a, b, gap, shared))
+    for n, (node, es) in enumerate(trunks):
         others = sorted({alias(x) for k in es for x in E[k]["ends"] if x and x != node})
         first = min(es, key=lambda k: src_line(E[k]["owner"]) or 10**9)
-        add("bundled-edges", f"{len(es)} edges at {alias(node)} (to {', '.join(others)}) leave it along one shared trunk for about {max(es.values()):.0f}px, so they read as one line with their labels crowded beside it. Give each target its own rank (---> on one edge), move the detail into the node's text ('writes PDFs, sends email'), or link to a package", src_line(E[first]["owner"]), at=where(E[first]["owner"]))
+        ends = f"; their end texts crowd ({', '.join(notes[n])})" if n in notes else ""
+        add("bundled-edges", f"{len(es)} edges at {alias(node)} (to {', '.join(others)}) leave it along one shared trunk for about {max(es.values()):.0f}px, so they read as one line with their labels crowded beside it{ends}. Give each target its own rank (---> on one edge), move the detail into the node's text ('writes PDFs, sends email'), or link to a package", src_line(E[first]["owner"]), at=where(E[first]["owner"]))
+    for a, b, gap, shared in crowded:
+        add("crowded-ends", f"'{a['text']}' and '{b['text']}' on two edges at {alias(next(iter(shared)))} are {gap:.1f}px apart and read as one; raise skinparam nodesep, or give one edge its own rank (---> on it)",
+            src_line(a["owner"]) or src_line(b["owner"]), at=[where(a["owner"]), where(b["owner"])])
     # sequence messages are not edges: report null rather than a 0 that reads as "no crossings"
     rep["edge_crossings"] = None if dtype == "SEQUENCE" else crossings
     if crossings and len(E) and crossings >= max(4, len(E)):
