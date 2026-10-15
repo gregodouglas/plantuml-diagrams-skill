@@ -19,9 +19,10 @@ Not needed: Docker, pip packages, network at render time (the C4 and icon librar
 sudo dnf install -y java-17-openjdk-headless graphviz fontconfig dejavu-sans-fonts liberation-sans-fonts python3 git
 
 # Java does not find "Helvetica" and renders in fontconfig's first sans-serif family, which is DejaVu Sans unless
-# Liberation Sans (metric-compatible with Helvetica) is preferred. Per user:
-mkdir -p ~/.config/fontconfig
-cat > ~/.config/fontconfig/fonts.conf <<'XML'
+# Liberation Sans (metric-compatible with Helvetica) is preferred. A drop-in file per user (for every user on the
+# host, the same content as root in /etc/fonts/local.conf should work; not tested here):
+mkdir -p ~/.config/fontconfig/conf.d
+cat > ~/.config/fontconfig/conf.d/50-plantuml-liberation.conf <<'XML'
 <?xml version="1.0"?>
 <!DOCTYPE fontconfig SYSTEM "fonts.dtd">
 <fontconfig>
@@ -48,7 +49,7 @@ plantuml -testdot      # "Installation seems OK"
 # the skill
 git clone https://github.com/gregodouglas/plantuml-diagrams-skill.git ~/plantuml-diagrams-skill && cd ~/plantuml-diagrams-skill
 ./install.sh           # symlinks into ~/.claude/skills and ~/.agents/skills, runs a smoke render
-tests/run.sh           # every line should start with "ok"
+tests/run.sh           # every line should start with "ok" (Graphviz 2.4x: dfd.puml aspect fails, see below)
 ```
 
 If you do not want the wrapper, set `PLANTUML_JAR=/opt/plantuml/plantuml.jar` (and `JAVA_HOME` or `PLANTUML_JAVA` if `java` is not on the PATH); the scripts pick it up.
@@ -70,5 +71,5 @@ If you do not want the wrapper, set `PLANTUML_JAR=/opt/plantuml/plantuml.jar` (a
 ## Known differences from the macOS development machine
 
 - Fonts: the house style asks for Helvetica, which Java does not find on Linux. It falls back to fontconfig's first sans-serif family: DejaVu Sans unless Liberation Sans is preferred, even with both installed. DejaVu text is about 12 % wider, and three templates failed their check with it. The fontconfig file in Steps fixes it (measured on Ubuntu 24.04 in CI with PlantUML 1.2026.8; check `fc-match sans-serif` on RHEL).
-- Graphviz 2.44/2.40 vs 15.x: layouts differ. In CI, Ubuntu's Graphviz 2.43 passes every template except `dfd`, which comes out taller than 16:9 (573x610 instead of 722x541). Re-run `tests/run.sh` after install to see where your version stands.
+- Graphviz 2.44/2.40 vs 15.x: layouts differ. In CI, Ubuntu's Graphviz 2.43 passes every template except `dfd`, which comes out taller than 16:9 (573x610 instead of 722x541). Re-run `tests/run.sh` after install: on Graphviz 2.4x expect exactly one FAIL, `dfd.puml` with `aspect`.
 - A GraalVM native build (`native-plantuml-linux-amd64-*.zip`) exists on the releases page and would remove the Java dependency; untested here.

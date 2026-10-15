@@ -8,6 +8,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   run-sh:
     runs-on: ubuntu-24.04
@@ -19,7 +23,9 @@ jobs:
         # (known: the dfd template comes out taller than 16:9).
         graphviz: ["15.1.1", "distro"]
     name: run.sh (Graphviz ${{ matrix.graphviz }})
+    timeout-minutes: 20
     env:
+      TMPDIR: ${{ runner.temp }}
       GRAPHVIZ_DEB_SHA256: 02c70b9d42149f5e2ba0e3882643b22904720de50a0a3da84a30b8f32e8a1497
       PLANTUML_VERSION: 1.2026.8
       PLANTUML_SHA256: 5e1ecfa8ecd32c90b03bbf3b1eb6f020943f98ab0fcf4032be31a0002ee2c462
@@ -46,8 +52,8 @@ jobs:
         # Java does not find "Helvetica" and falls back to its Dialog font, which fontconfig resolves to the first
         # sans-serif family: DejaVu Sans (about 12% wider) unless Liberation Sans is preferred
         run: |
-          mkdir -p ~/.config/fontconfig
-          cat > ~/.config/fontconfig/fonts.conf <<'XML'
+          mkdir -p ~/.config/fontconfig/conf.d
+          cat > ~/.config/fontconfig/conf.d/50-plantuml-liberation.conf <<'XML'
           <?xml version="1.0"?>
           <!DOCTYPE fontconfig SYSTEM "fonts.dtd">
           <fontconfig>
@@ -70,16 +76,22 @@ jobs:
           dot -V
           python3 --version
       - name: tests/run.sh
+        # on the distro Graphviz the dfd template's aspect FAIL is known; any other FAIL, or a crash, fails the job
         run: |
-          if [ "${{ matrix.graphviz }}" = distro ]; then
-            tests/run.sh || echo "::warning title=Graphviz 2.43::tests/run.sh failed on the distro Graphviz; see the FAIL lines in the log"
-          else
-            tests/run.sh
+          if [ "${{ matrix.graphviz }}" != distro ]; then tests/run.sh; exit; fi
+          tests/run.sh | tee "$RUNNER_TEMP/run.log" || true
+          known='^FAIL .*/templates/dfd\.puml: did not expect /\./ in \[aspect\]$'
+          if grep -q '^FAIL' "$RUNNER_TEMP/run.log"; then
+            grep -q -E "$known" "$RUNNER_TEMP/run.log" && echo "::warning title=Graphviz 2.43::dfd template is taller than 16:9 (known)"
           fi
-      - name: Keep the renders of a failed run
-        if: failure()
+          unexpected=$(grep '^FAIL' "$RUNNER_TEMP/run.log" | grep -v -E "$known" || true)
+          if [ -n "$unexpected" ] || ! grep -q '^ok   puml-render error exit' "$RUNNER_TEMP/run.log"; then
+            echo "unexpected failures on Graphviz 2.43:"; printf '%s\n' "$unexpected"; exit 1
+          fi
+      - name: Keep the renders
+        if: failure() || matrix.graphviz == 'distro'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: renders-graphviz-${{ matrix.graphviz }}
-          path: /tmp/puml-tests/*.svg
+          path: ${{ runner.temp }}/puml-tests/*.svg
           retention-days: 7
